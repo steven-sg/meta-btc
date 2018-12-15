@@ -177,10 +177,12 @@ class ModularTransaction {
       const rawInputi = this.transactionDict.getValue(txConstants.INPUTS.SELF)[i];
       const inputLogger = new OrderedDict([
         txConstants.INPUTS.SCRIPT_PUB_KEY,
-        txConstants.INPUTS.SCRIPT_PUB_KEY_LENGTH,
       ]);
 
-      // TODO log initial scriptPubKey setting
+      log(
+        inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
+        ['Set the scriptPubKey of every other input to be empty'],
+      );
       for (let j = 0; j < this.contributions.length; j += 1) {
         if (i === j) {
           const { scriptPubKey } = this.contributions[i].output;
@@ -196,7 +198,6 @@ class ModularTransaction {
           this.transactionDict.vals.inputs[j].vals[txConstants.INPUTS.SCRIPT_PUB_KEY] = '';
         }
       }
-      // END TODO
       const input = OrderedDict.copy(rawInputi);
       input.setValue(txConstants.INPUTS.SCRIPT_PUB_KEY, []);
 
@@ -279,8 +280,7 @@ class ModularTransaction {
         ),
       );
 
-      // todo: ADD COMPRESSION LOGS?
-      const encodedPub = utils.encodePub(publicKey);
+      const encodedPub = utils.encodePub(publicKey, inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY));
 
       const publicKeyLength = utils.getByteLengthInBytes(
         encodedPub,

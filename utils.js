@@ -181,12 +181,37 @@ function encodePub(publicKey, logger) {
   // GET RID OF FIRST BYTE PREFIX
   // TODO ADD LOGGER LOGIC
   const strippedPub = publicKey.slice(2);
+
   const hexSegmentA = strippedPub.slice(0, 64);
   const hexSegmentB = strippedPub.slice(64, 128);
 
   const bModulo = parseInt(hexSegmentB.slice(-1), 16) % 2;
   const prefix = `0${bModulo + 2}`;
   const compressedHex = prefix + hexSegmentA;
+
+  if (logger) {
+    log(logger, ['Encoding public key as compressed hex']);
+    log(logger, new Tuple(
+      'Strip public key',
+      strippedPub,
+    ));
+    log(logger, new Tuple(
+      'Segment stripped key',
+      `A:${hexSegmentA}, B:${hexSegmentB}`,
+    ));
+    log(logger, new Tuple(
+      'Modulo Segment B value by 2',
+      bModulo,
+    ));
+    log(logger, new Tuple(
+      'Create byte prefix from adding value 2 to the modulo and appending 0 to the start',
+      prefix,
+    ));
+    log(logger, new Tuple(
+      'Combine the prefix with Segment A',
+      compressedHex,
+    ));
+  }
 
   return compressedHex;
 }
