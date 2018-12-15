@@ -86,9 +86,9 @@ const txConstants = {
     TRANSACTION_INDEX: 'transaction index',
     SCRIPT_PUB_KEY_LENGTH: 'scriptPubKey length',
     SCRIPT_PUB_KEY: 'scriptPubKey',
+    SEQUENCE: 'sequence',
   },
   SIGNED_INPUTS: 'signed inputs',
-  SEQUENCE: 'sequence',
   OUTPUT_COUNT: 'output count',
   OUTPUTS: {
     SELF: 'outputs',
@@ -119,7 +119,6 @@ class ModularTransaction {
       txConstants.VERSION_CODE,
       txConstants.INPUT_COUNT,
       txConstants.INPUTS.SELF,
-      txConstants.SEQUENCE,
       txConstants.OUTPUT_COUNT,
       txConstants.OUTPUTS.SELF,
       txConstants.LOCK_TIME,
@@ -130,7 +129,6 @@ class ModularTransaction {
       txConstants.VERSION_CODE,
       txConstants.INPUT_COUNT,
       txConstants.INPUTS.SELF,
-      txConstants.SEQUENCE,
       txConstants.OUTPUT_COUNT,
       txConstants.OUTPUTS.SELF,
       txConstants.LOCK_TIME,
@@ -138,7 +136,6 @@ class ModularTransaction {
     ]);
 
     this.versionCode = '01000000';
-    this.sequence = 'ffffffff';
     this.lockTime = '00000000';
     this.hashCodeType = '01000000';
   }
@@ -157,7 +154,6 @@ class ModularTransaction {
     );
 
     this.appendRawInputs();
-    this.appendSequence();
 
     const outputCount = utils.convertIntegerToBytes(
       this.payments.length, 1, this.logger.getValue(txConstants.OUTPUT_COUNT),
@@ -174,13 +170,33 @@ class ModularTransaction {
     this.appendHashCodeType();
   }
 
-  signTransaction(privateKey) {
-    for (let i = 0; i < this.transactionDict.getValue(txConstants.INPUTS.SELF).length; i += 1) {
+  signTransaction(privateKeys) {
+    const signedInputs = [];
+    for (let i = 0; i < this.contributions.length; i += 1) {
+      // TODO rawInput seems redundant
       const rawInputi = this.transactionDict.getValue(txConstants.INPUTS.SELF)[i];
       const inputLogger = new OrderedDict([
         txConstants.INPUTS.SCRIPT_PUB_KEY,
         txConstants.INPUTS.SCRIPT_PUB_KEY_LENGTH,
       ]);
+
+      // TODO log initial scriptPubKey setting
+      for (let j = 0; j < this.contributions.length; j += 1) {
+        if (i === j) {
+          const { scriptPubKey } = this.contributions[i].output;
+          const scriptPubKeyLength = utils.getByteLengthInBytes(
+            scriptPubKey,
+            inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY_LENGTH),
+            { string: 'scriptPubKey' },
+          );
+          this.transactionDict.vals.inputs[j].vals[txConstants.INPUTS.SCRIPT_PUB_KEY_LENGTH] = scriptPubKeyLength;
+          this.transactionDict.vals.inputs[j].vals[txConstants.INPUTS.SCRIPT_PUB_KEY] = scriptPubKey;
+        } else {
+          this.transactionDict.vals.inputs[j].vals[txConstants.INPUTS.SCRIPT_PUB_KEY_LENGTH] = '00';
+          this.transactionDict.vals.inputs[j].vals[txConstants.INPUTS.SCRIPT_PUB_KEY] = '';
+        }
+      }
+      // END TODO
       const input = OrderedDict.copy(rawInputi);
       input.setValue(txConstants.INPUTS.SCRIPT_PUB_KEY, []);
 
@@ -195,7 +211,7 @@ class ModularTransaction {
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
         { hexString: 'hash of raw transaction' },
       );
-      const keypair = utils.ecdsaFromPriv(privateKey, inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY));
+      const keypair = utils.ecdsaFromPriv(privateKeys[i], inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY));
       const signedTx = keypair.sign(doubleHashedTx);
       log(
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
@@ -294,15 +310,18 @@ class ModularTransaction {
       );
       log(
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        ['Replace old scriptPubKey length with signature length'],
+        ['Replace scriptPubKey length with signature length'],
       );
       log(
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        ['Replace old scriptPubKey with signature'],
+        ['Replace scriptPubKey with signature'],
       );
       appendTo(inputLogger, this.logger.getValue(txConstants.SIGNED_INPUTS));
-      this.transactionDict.vals.inputs[i] = input;
+      // TODO is the logging for this logic still valid after the change?
+      signedInputs.push(input);
     }
+    this.transactionDict.vals.inputs = signedInputs;
+    // END TODO
     this.transactionDict.remove(txConstants.HASH_CODE_TYPE);
   }
 
@@ -312,15 +331,6 @@ class ModularTransaction {
       this.transactionDict.getValue(txConstants.VERSION_CODE),
       this.logger.getValue(txConstants.VERSION_CODE),
       { appendTo: { arg: 'version code', destination: 'transaction' } },
-    );
-  }
-
-  appendSequence() {
-    appendTo(
-      this.sequence,
-      this.transactionDict.getValue(txConstants.SEQUENCE),
-      this.logger.getValue(txConstants.SEQUENCE),
-      { appendTo: { arg: 'sequence', destination: 'transaction' } },
     );
   }
 
@@ -354,12 +364,14 @@ class ModularTransaction {
         txConstants.INPUTS.TRANSACTION_INDEX,
         txConstants.INPUTS.SCRIPT_PUB_KEY_LENGTH,
         txConstants.INPUTS.SCRIPT_PUB_KEY,
+        txConstants.INPUTS.SEQUENCE,
       ]);
       const input = new OrderedDict([
         txConstants.INPUTS.TRANSACTION_HASH,
         txConstants.INPUTS.TRANSACTION_INDEX,
         txConstants.INPUTS.SCRIPT_PUB_KEY_LENGTH,
         txConstants.INPUTS.SCRIPT_PUB_KEY,
+        txConstants.INPUTS.SEQUENCE,
       ]);
 
       const txhashLE = utils.convertToLittleEndian(
@@ -404,6 +416,13 @@ class ModularTransaction {
         { appendTo: { arg: 'scriptPubKey', destination: `input ${i}` } },
       );
 
+      // appending sequence
+      appendTo(
+        'ffffffff',
+        input.getValue(txConstants.INPUTS.SEQUENCE),
+        inputLogger.getValue(txConstants.INPUTS.SEQUENCE),
+        { appendTo: { arg: 'sequence', destination: `input ${i}` } },
+      );
       // Appending final input
       appendTo(inputLogger, this.logger.getValue(txConstants.INPUTS.SELF));
       appendTo(
