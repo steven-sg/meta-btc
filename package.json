@@ -14,9 +14,11 @@
     "eslint-plugin-import": "^2.14.0"
   },
   "dependencies": {
+    "axios": "^0.18.0",
     "bitcoin-script": "^0.1.1",
     "bitcoinjs-lib": "^4.0.2",
     "blockchain.info": "^2.12.1",
+    "bn.js": "^4.11.8",
     "bs58": "^4.0.1",
     "buffer": "^5.2.1",
     "elliptic": "^6.4.1",

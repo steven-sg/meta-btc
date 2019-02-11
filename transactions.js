@@ -1,15 +1,12 @@
-const forge = require('node-forge');
-const base58 = require('bs58');
 const { Buffer } = require('buffer/');
-const { ec } = require('elliptic/');
 const BN = require('bn.js');
 const utils = require('./utils');
-const ecdsa = new ec('secp256k1');
 
 const { log } = require('./logger');
 const { OrderedDict } = require('./dataStructures');
+const services = require('./services/services');
 
-const N = new BN('115792089237316195423570985008687907852837564279074904382605163141518161494337')
+const N = new BN('115792089237316195423570985008687907852837564279074904382605163141518161494337');
 
 class p2pkh {
   static createScript(recipientAddress) {
@@ -32,42 +29,6 @@ class p2pkh {
       OP_EQUALVERIFY.toString(16),
       OP_CHECKSIG.toString(16),
     ].join('');
-  }
-}
-
-class TransactionOutput {
-  constructor(outputIndex, scriptPubKey) {
-    this.outputIndex = outputIndex;
-    this.scriptPubKey = scriptPubKey;
-  }
-}
-
-class Contribution {
-  constructor(txHash, output) {
-    this.txHash = txHash;
-    this.output = output;
-  }
-}
-
-class Transaction {
-  constructor(txHash, outputs) {
-    this.txHash = txHash;
-
-    this.outputs = {};
-    for (let i = 0; i < outputs.length; i += 1) {
-      this.outputs[outputs[i].outputIndex] = outputs[i];
-    }
-  }
-
-  getContribution(outputIndex) {
-    return new Contribution(this.txHash, this.outputs[outputIndex]);
-  }
-}
-
-class Payment {
-  constructor(amount, to) {
-    this.amount = amount;
-    this.to = to;
   }
 }
 
@@ -111,7 +72,6 @@ function appendTo(arg, array, logger = null, xtemplate = {}) {
 }
 
 class ModularTransaction {
-
   constructor(contributions, payments) {
     this.contributions = contributions;
     this.payments = payments;
@@ -490,12 +450,17 @@ class ModularTransaction {
       );
     }
   }
+
+  pushtx() {
+    const txString = utils.joinArray(this.transactionDict).join('');
+    return services.pushtx(txString)
+      .then(response => response)
+      .catch((error) => {
+        throw error;
+      });
+  }
 }
 
 module.exports = {
-  TransactionOutput,
-  Transaction,
-  Contribution,
-  Payment,
   ModularTransaction,
 };
