@@ -412,7 +412,7 @@ class ModularTransaction {
         payment.amount,
         8,
         outputLogger.getValue(txConstants.OUTPUTS.TRANSACTION_AMOUNT),
-        { hexString: 'amount' }
+        { hexString: 'amount' },
       );
       appendTo(
         amountLE,
