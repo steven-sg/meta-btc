@@ -1,16 +1,10 @@
-// function getPubKeyFormat
-// function decodePubKey
-// function encodePubKey
-// function getPrivKeyFormat
-// function decodePrivKey
-// function encodePrivKey
 const base58 = require('bs58');
 const { Buffer } = require('buffer/');
 const { ec } = require('elliptic/');
 const forge = require('node-forge');
 const SafeBuffer = require('safe-buffer').Buffer;
 const ecdsa = new ec('secp256k1');
-const RIPEMD160 = require('ripemd160')
+const RIPEMD160 = require('ripemd160');
 const { log } = require('./logger');
 const { OrderedDict } = require('./dataStructures');
 
@@ -18,6 +12,30 @@ class InvalidInputFormat extends Error {
   constructor(message) {
     super(message);
     this.name = 'InvalidInputFormat';
+    this.message = message;
+  }
+}
+
+class CurrencyConversionError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'CurrencyConversionError';
+    this.message = message;
+  }
+}
+
+class UnsupportedScriptFormat extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'UnsupportedScriptFormat';
+    this.message = message;
+  }
+}
+
+class InvalidScriptFormat extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'InvalidScriptFormat';
     this.message = message;
   }
 }
@@ -159,8 +177,44 @@ function getByteLength(string, logger, xTemplate = {}) {
 }
 
 function getByteLengthInBytes(string, logger, xTemplate = {}) {
+  // TODO this function is DEFINTELY bugged, fails for byteLength 372
   const byteLength = getByteLength(string, logger, xTemplate);
   return convertIntegerToBytes(byteLength, 1, logger, xTemplate);
+}
+
+function convertCurrencyToSatoshi(value, convertFrom) {
+  switch (convertFrom.toLowerCase()) {
+    case 'satoshi':
+      return value;
+    case 'mbtc':
+      return (value * 100000);
+    case 'btc':
+      return (value * 100000000);
+    default:
+      throw new CurrencyConversionError(`Unsupported conversion origin format: ${convertFrom}.`);
+  }
+}
+
+function convertCurrencyTo(value, convertTo, convertFrom = 'satoshi') {
+  const pvalue = convertCurrencyToSatoshi(value, convertFrom);
+  switch (convertTo.toLowerCase()) {
+    case 'satoshi':
+      return pvalue;
+    case 'mbtc':
+      return (pvalue / 100000).toFixed(5);
+    case 'btc':
+      return (pvalue / 100000000).toFixed(8);
+    default:
+      throw new CurrencyConversionError(`Unsupported conversion destination format: ${convertTo}.`);
+  }
+}
+
+function getScriptFormat(script) {
+  const pscript = script.toLowerCase();
+  if (pscript.startsWith('76a914') && pscript.endsWith('88ac')) {
+    return 'pay-to-pubkey-hash';
+  }
+  throw new InvalidScriptFormat('Invalid or unsupported script format. Please use pay-to-pubkey-hash.');
 }
 
 function b58decode(string, logger, xTemplate = {}) {
@@ -363,12 +417,14 @@ function privToAddress(priv, network = 'mainnet') {
 }
 
 module.exports = {
+  InvalidInputFormat,
   Tuple,
   isIterable,
   joinArray,
   convertToLittleEndian,
   convertIntegerToBytes,
   convertIntegerToLittleEndian,
+  getByteLength,
   getByteLengthInBytes,
   b58decode,
   b58encode,
@@ -387,4 +443,10 @@ module.exports = {
   networkPrependDoubleHashChecksumAppendBase58,
   pubToAddress,
   privToAddress,
+  convertCurrencyTo,
+  CurrencyConversionError,
+  convertCurrencyToSatoshi,
+  UnsupportedScriptFormat,
+  getScriptFormat,
+  InvalidScriptFormat,
 };

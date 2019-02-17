@@ -5,35 +5,12 @@ const utils = require('./utils');
 const { log } = require('./logger');
 const { OrderedDict } = require('./dataStructures');
 const services = require('./services/services');
+const scripts = require('./scripts');
 
 const N = new BN('115792089237316195423570985008687907852837564279074904382605163141518161494337');
 
-class p2pkh {
-  static createScript(recipientAddress) {
-    const decodedAddress = utils.b58decode(recipientAddress);
-    // Remove checksum and network bytes
-    const pubKeyHash = utils.stripAddress(decodedAddress);
-
-    const OP_DUP = 118;
-    const OP_HASH160 = 169;
-    // const bytesToPush = getByteLength(pubKeyHash).toString(16);
-    const bytesToPush = 14;
-    const OP_EQUALVERIFY = 136;
-    const OP_CHECKSIG = 172;
-
-    return [
-      OP_DUP.toString(16),
-      OP_HASH160.toString(16),
-      bytesToPush,
-      pubKeyHash,
-      OP_EQUALVERIFY.toString(16),
-      OP_CHECKSIG.toString(16),
-    ].join('');
-  }
-}
-
-function createOutputScript(address, type = p2pkh, logger) {
-  const p2pkhScript = p2pkh.createScript(address);
+function createOutputScript(address, logger) {
+  const p2pkhScript = scripts.p2pkh.createScript(address);
   log(logger, new utils.Tuple('Create p2pkh script', p2pkhScript));
   return p2pkhScript;
 }
@@ -161,6 +138,7 @@ class ModularTransaction {
       const input = OrderedDict.copy(rawInputi);
       input.setValue(txConstants.INPUTS.SCRIPT_PUB_KEY, []);
 
+      // logic
       const transaction = utils.joinArray(this.transactionDict).join('');
       const hashedTx = utils.sha256(
         transaction,
@@ -421,6 +399,7 @@ class ModularTransaction {
         { appendTo: { destination: `output ${i}` } },
       );
 
+      // TODO Should this use the logger?
       const outputScript = createOutputScript(payment.to);
       const outputScriptLength = utils.getByteLengthInBytes(
         outputScript,
@@ -459,8 +438,20 @@ class ModularTransaction {
         throw error;
       });
   }
+
+  getRawString() {
+    return utils.joinArray(this.transactionDict).join('');
+  }
 }
+
+const createSignedTransaction = (contributions, payments, privs) => {
+  const modTx = new ModularTransaction(contributions, payments);
+  modTx.createRawTransaction();
+  modTx.signTransaction(privs);
+  return modTx;
+};
 
 module.exports = {
   ModularTransaction,
+  createSignedTransaction,
 };
