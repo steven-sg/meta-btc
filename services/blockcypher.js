@@ -1,10 +1,10 @@
 const axios = require('axios');
 
-function pushtx(tx) {
+function pushtx(tx, network) {
   return axios.post('https://api.blockcypher.com/v1/btc/test3/txs/push', JSON.stringify({ tx }));
 }
 
-function pullUnspentTransactions(address) {
+function pullUnspentTransactions(address, network) {
   return axios.get(`https://api.blockcypher.com/v1/btc/test3/addrs/${address}?unspentOnly=true`)
     .then((response) => {
       let txs = Array.isArray(response.data.txrefs) ? response.data.txrefs : [response.data.txrefs];
@@ -21,7 +21,7 @@ function pullUnspentTransactions(address) {
     });
 }
 
-function pullMetadata() {
+function pullMetadata(network) {
   return axios.get('https://api.blockcypher.com/v1/btc/test3');
 }
 

@@ -2,7 +2,7 @@ const blockcypher = require('./blockcypher');
 const transaction = require('../model/transaction');
 const { ServiceResponse, ServiceError, InternalError } = require('./utils');
 
-function pushtx(tx) {
+function pushtx(tx, network) {
   return blockcypher.pushtx(tx)
     .then(response => new ServiceResponse(response.status, response.data))
     .catch((error) => {
@@ -10,13 +10,12 @@ function pushtx(tx) {
     });
 }
 
-function pullUnspentTransactions(address) {
+function pullUnspentTransactions(address, network) {
   return blockcypher.pullUnspentTransactions(address)
     .then((response) => {
       if (!response) {
         throw new InternalError(`An error has occured. ${address} has no spendable balance.`);
       }
-
       const data = Array.isArray(response.data) ? response.data : [response.data];
       const txs = data.map((tx) => {
         let outputs = Array.isArray(tx.outputs) ? tx.outputs : [tx.outputs];

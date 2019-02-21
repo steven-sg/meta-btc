@@ -67,8 +67,11 @@ function isHexString(str) {
   return /^[0-9A-F]*$/i.test(str);
 }
 
-function isDecimalString(str) {
+function isDecimalString(str, regex = false) {
   // return !isNaN(str);
+  if (regex) {
+    return /^-?[0-9]+$/.test(str);
+  }
   return !Number.isNaN(Number(str));
 }
 
@@ -153,6 +156,7 @@ function convertIntegerToBytes(integer, bytes, logger, xTemplate = {}) {
 }
 
 function convertIntegerToLittleEndian(integer, bytes, logger, xTemplate = {}) {
+  // TODO the below functions dont even implement xtemplate
   const hexedInteger = convertIntegerToBytes(integer, bytes, logger, xTemplate);
   return convertToLittleEndian(hexedInteger, logger, xTemplate);
 }
@@ -449,4 +453,5 @@ module.exports = {
   UnsupportedScriptFormat,
   getScriptFormat,
   InvalidScriptFormat,
+  isDecimalString,
 };
