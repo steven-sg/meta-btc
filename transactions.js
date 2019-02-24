@@ -1,17 +1,21 @@
 const { Buffer } = require('buffer/');
 const BN = require('bn.js');
 const utils = require('./utils');
-
 const { log } = require('./logger');
 const { OrderedDict } = require('./dataStructures');
 const services = require('./services/services');
 const scripts = require('./scripts');
+const { ActionLog, ConversionLog, AppendLog, AppendTransactionLog } = require('./model/transaction');
 
 const N = new BN('115792089237316195423570985008687907852837564279074904382605163141518161494337');
 
 function createOutputScript(address, logger) {
   const p2pkhScript = scripts.p2pkh.createScript(address);
-  log(logger, new utils.Tuple('Create p2pkh script', p2pkhScript));
+  log(logger, new ActionLog(
+    'Create',
+    'P2PKH Script',
+    `${p2pkhScript}`,
+  ));
   return p2pkhScript;
 }
 
@@ -38,13 +42,35 @@ const txConstants = {
   HASH_CODE_TYPE: 'hash code type',
 };
 
-
-function appendTo(arg, array, logger = null, xtemplate = {}) {
+function appendTo(arg, array, parentArray, logger = null, xtemplate = {}) {
+  const prevValues = parentArray ? `${utils.joinArray(parentArray).join('')}${array.join('')}` : array.join('');
   array.push(arg);
   if (logger) {
-    log(logger, [
-      `Append ${xtemplate.appendTo.arg || arg} to ${xtemplate.appendTo.destination || array.join('')}`,
-    ]);
+    const appendageTemplate = utils.getTemplateValue(xtemplate.appendTo.arg, arg);
+    const toTemplate = utils.getTemplateValue(xtemplate.appendTo.destination, prevValues || 'EMPTY');
+    log(logger, new AppendLog(
+      `${appendageTemplate}`,
+      `${toTemplate}`,
+      `${prevValues || ''}${utils.joinArray(array).join('')}`,
+    ));
+  }
+}
+
+function appendToTransaction(arg, array, transaction, logger = null, xtemplate = {}) {
+  const prevTransaction = utils.joinArray(transaction).join('');
+  const prevArrayState = utils.joinArray(array).join('');
+
+  array.push(arg);
+  if (logger) {
+    const toTemplate = `${prevTransaction}${prevArrayState}` || 'EMPTY';
+
+    const appendage = arg instanceof OrderedDict ? utils.joinArray(arg).join('') : arg;
+    const appendageTemplate = utils.getTemplateValue(xtemplate.appendTo.arg, appendage);
+    log(logger, new AppendTransactionLog(
+      `${appendageTemplate}`,
+      `${toTemplate}`,
+      `${prevTransaction}${utils.joinArray(array).join('')}`,
+    ));
   }
 }
 
@@ -81,11 +107,15 @@ class ModularTransaction {
     this.appendVersionCode();
 
     const inputCount = utils.convertIntegerToBytes(
-      this.contributions.length, 1, this.logger.getValue(txConstants.INPUT_COUNT),
+      this.contributions.length,
+      1,
+      this.logger.getValue(txConstants.INPUT_COUNT),
+      { convertIntegerToBytes_integer: 'input_count' },
     );
-    appendTo(
+    appendToTransaction(
       inputCount,
       this.transactionDict.getValue(txConstants.INPUT_COUNT),
+      this.transactionDict,
       this.logger.getValue(txConstants.INPUT_COUNT),
       { appendTo: { destination: 'transaction' } },
     );
@@ -93,11 +123,15 @@ class ModularTransaction {
     this.appendRawInputs();
 
     const outputCount = utils.convertIntegerToBytes(
-      this.payments.length, 1, this.logger.getValue(txConstants.OUTPUT_COUNT),
+      this.payments.length,
+      1,
+      this.logger.getValue(txConstants.OUTPUT_COUNT),
+      { convertIntegerToBytes_integer: 'output_count' },
     );
-    appendTo(
+    appendToTransaction(
       outputCount,
       this.transactionDict.getValue(txConstants.OUTPUT_COUNT),
+      this.transactionDict,
       this.logger.getValue(txConstants.OUTPUT_COUNT),
       { appendTo: { destination: 'transaction' } },
     );
@@ -118,7 +152,10 @@ class ModularTransaction {
 
       log(
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        ['Set the scriptPubKey of every other input to be empty'],
+        new ActionLog(
+          'Set',
+          'the scriptPubKey of every other input to be empty',
+        ),
       );
       for (let j = 0; j < this.contributions.length; j += 1) {
         if (i === j) {
@@ -143,21 +180,24 @@ class ModularTransaction {
       const hashedTx = utils.sha256(
         transaction,
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        { hexString: 'raw transaction' },
+        { hexString: 'raw_transaction' },
       );
       const doubleHashedTx = utils.sha256(
         hashedTx,
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        { hexString: 'hash of raw transaction' },
+        { hexString: 'hash_of_raw transaction' },
       );
       const keypair = utils.ecdsaFromPriv(privateKeys[i], inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY));
       const signedTx = keypair.sign(doubleHashedTx);
       log(
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        new utils.Tuple(
-          `Sign ${doubleHashedTx} with private key`,
-          `r value: ${signedTx.r.toString()}`,
-          `s value: ${signedTx.s.toString()}`,
+        new ActionLog(
+          'Sign',
+          `${doubleHashedTx} with private_key`,
+          [
+            `r value: ${signedTx.r.toString()}`,
+            `s value: ${signedTx.s.toString()}`,
+          ],
         ),
       );
 
@@ -166,28 +206,33 @@ class ModularTransaction {
         signedTx.s = N.sub(signedTx.s);
         log(
           inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-          new utils.Tuple(
-            'Modify s value to be N - s (s value too big)',
-            `${signedTx.r.toString()} - ${N.toString()}`,
-            signedTx.s.toString(),
+          new ActionLog(
+            'Set',
+            's value to be N - s (s value too big)',
+            [
+              `${signedTx.r.toString()} - ${N.toString()}`,
+              signedTx.s.toString(),
+            ],
           ),
         );
       }
       const signedTxDER = Buffer.from(signedTx.toDER()).toString('hex');
       log(
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        new utils.Tuple(
-          'DER encode signature',
-          signedTxDER,
+        new ActionLog(
+          'DER Encode',
+          'signature',
+          `${signedTxDER}`,
         ),
       );
       // append one byte hash code
       const txHEX = `${signedTxDER}01`;
       log(
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        new utils.Tuple(
-          'Add one byte hash code to DER encoded signature',
-          txHEX,
+        new AppendLog(
+          'one byte hash code',
+          'DER encoded signature',
+          `${txHEX}`,
         ),
       );
 
@@ -199,22 +244,25 @@ class ModularTransaction {
       appendTo(
         signatureLength,
         input.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
+        null,
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        { appendTo: { destination: 'signed scriptPubKey' } },
+        { appendTo: { destination: 'signed_script_pub_key' } },
       );
       appendTo(
         txHEX,
         input.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
+        null,
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        { appendTo: { destination: 'signed scriptPubKey' } },
+        { appendTo: { destination: 'signed_script_pub_key' } },
       );
 
       const publicKey = keypair.getPublic().encode('hex');
       log(
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        new utils.Tuple(
-          'Derive public key from private key',
-          publicKey,
+        new ActionLog(
+          'Derive',
+          'public_key from private_key',
+          `${publicKey}`,
         ),
       );
 
@@ -223,19 +271,21 @@ class ModularTransaction {
       const publicKeyLength = utils.getByteLengthInBytes(
         encodedPub,
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        { string: 'public key' },
+        { string: 'public_key' },
       );
       appendTo(
         publicKeyLength,
         input.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
+        null,
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        { appendTo: { destination: 'signed scriptPubKey' } },
+        { appendTo: { destination: 'signed_script_pub_key' } },
       );
       appendTo(
         encodedPub,
         input.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
+        null,
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        { appendTo: { destination: 'signed scriptPubKey' } },
+        { appendTo: { destination: 'signed_script_pub_key' } },
       );
 
       input.setValue(
@@ -248,11 +298,19 @@ class ModularTransaction {
       );
       log(
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        ['Replace scriptPubKey length with signature length'],
+        new ActionLog(
+          'Replace',
+          'script_pub_key length with signature length',
+          'TODO',
+        ),
       );
       log(
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        ['Replace scriptPubKey with signature'],
+        new ActionLog(
+          'Replace',
+          'script_pub_key with signature',
+          'TODO',
+        ),
       );
       appendTo(inputLogger, this.logger.getValue(txConstants.SIGNED_INPUTS));
       // TODO is the logging for this logic still valid after the change?
@@ -264,29 +322,32 @@ class ModularTransaction {
   }
 
   appendVersionCode() {
-    appendTo(
+    appendToTransaction(
       this.versionCode,
       this.transactionDict.getValue(txConstants.VERSION_CODE),
+      this.transactionDict,
       this.logger.getValue(txConstants.VERSION_CODE),
-      { appendTo: { arg: 'version code', destination: 'transaction' } },
+      { appendTo: { arg: 'version_code', destination: 'transaction' } },
     );
   }
 
   appendLockTime() {
-    appendTo(
+    appendToTransaction(
       this.lockTime,
       this.transactionDict.getValue(txConstants.LOCK_TIME),
+      this.transactionDict,
       this.logger.getValue(txConstants.LOCK_TIME),
-      { appendTo: { arg: 'lock time', destination: 'transaction' } },
+      { appendTo: { arg: 'lock_time', destination: 'transaction' } },
     );
   }
 
   appendHashCodeType() {
-    appendTo(
+    appendToTransaction(
       this.hashCodeType,
       this.transactionDict.getValue(txConstants.HASH_CODE_TYPE),
+      this.transactionDict,
       this.logger.getValue(txConstants.HASH_CODE_TYPE),
-      { appendTo: { arg: 'hash code type', destination: 'transaction' } },
+      { appendTo: { arg: 'hash_code_type', destination: 'transaction' } },
     );
   }
 
@@ -315,59 +376,68 @@ class ModularTransaction {
       const txhashLE = utils.convertToLittleEndian(
         txHash,
         inputLogger.getValue(txConstants.INPUTS.TRANSACTION_HASH),
-        { hexString: 'transaction hash' },
+        { hexString: 'transaction_hash' },
       );
       appendTo(
         txhashLE,
         input.getValue(txConstants.INPUTS.TRANSACTION_HASH),
+        input,
         inputLogger.getValue(txConstants.INPUTS.TRANSACTION_HASH),
-        { appendTo: { destination: `input ${i}` } },
+        { appendTo: { destination: `input_${i}` } },
       );
       const outputIndexLE = utils.convertIntegerToLittleEndian(
         outputIndex,
         4,
         inputLogger.getValue(txConstants.INPUTS.TRANSACTION_INDEX),
-        { hexString: 'transaction output index' },
+        {
+          convertIntegerToBytes_integer: 'transaction_output_index',
+          hexString: 'transaction_output_index',
+        },
       );
       appendTo(
         outputIndexLE,
         input.getValue(txConstants.INPUTS.TRANSACTION_INDEX),
+        input,
         inputLogger.getValue(txConstants.INPUTS.TRANSACTION_INDEX),
-        { appendTo: { destination: `input ${i}` } },
+        { appendTo: { destination: `input_${i}` } },
       );
 
       const scriptPubKeyLength = utils.getByteLengthInBytes(
         scriptPubKey,
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY_LENGTH),
-        { string: 'scriptPubKey' },
+        { string: 'script_pub_key' },
       );
       appendTo(
         scriptPubKeyLength,
         input.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY_LENGTH),
+        input,
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY_LENGTH),
-        { appendTo: { destination: `input ${i}` } },
+        { appendTo: { destination: `input_${i}` } },
       );
       appendTo(
         scriptPubKey,
         input.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
+        input,
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        { appendTo: { arg: 'scriptPubKey', destination: `input ${i}` } },
+        { appendTo: { arg: 'script_pub_key', destination: `input_${i}` } },
       );
 
       // appending sequence
       appendTo(
         'ffffffff',
         input.getValue(txConstants.INPUTS.SEQUENCE),
+        input,
         inputLogger.getValue(txConstants.INPUTS.SEQUENCE),
-        { appendTo: { arg: 'sequence', destination: `input ${i}` } },
+        { appendTo: { arg: 'sequence', destination: `input_${i}` } },
       );
       // Appending final input
       appendTo(inputLogger, this.logger.getValue(txConstants.INPUTS.SELF));
-      appendTo(
+      appendToTransaction(
         input,
         this.transactionDict.getValue(txConstants.INPUTS.SELF),
+        this.transactionDict,
         this.logger.getValue(txConstants.INPUTS.SELF),
-        { appendTo: { arg: `input ${i}`, destination: 'transaction' } },
+        { appendTo: { arg: `input_${i}`, destination: 'transaction' } },
       );
     }
   }
@@ -390,13 +460,17 @@ class ModularTransaction {
         payment.amount,
         8,
         outputLogger.getValue(txConstants.OUTPUTS.TRANSACTION_AMOUNT),
-        { hexString: 'amount' },
+        {
+          convertIntegerToBytes_integer: 'amount',
+          hexString: 'amount',
+        },
       );
       appendTo(
         amountLE,
         output.getValue(txConstants.OUTPUTS.TRANSACTION_AMOUNT),
+        output,
         outputLogger.getValue(txConstants.OUTPUTS.TRANSACTION_AMOUNT),
-        { appendTo: { destination: `output ${i}` } },
+        { appendTo: { destination: `output_${i}` } },
       );
 
       // TODO Should this use the logger?
@@ -404,35 +478,38 @@ class ModularTransaction {
       const outputScriptLength = utils.getByteLengthInBytes(
         outputScript,
         outputLogger.getValue(txConstants.OUTPUTS.TRANSACTION_AMOUNT),
-        { string: 'output script' },
+        { string: 'output_script' },
       );
       appendTo(
         outputScriptLength,
         output.getValue(txConstants.OUTPUTS.OUTPUT_SCRIPT_LENGTH),
+        output,
         outputLogger.getValue(txConstants.OUTPUTS.OUTPUT_SCRIPT_LENGTH),
-        { appendTo: { destination: `output ${i}` } },
+        { appendTo: { destination: `output_${i}` } },
       );
       appendTo(
         outputScript,
         output.getValue(txConstants.OUTPUTS.OUTPUT_SCRIPT),
+        output,
         outputLogger.getValue(txConstants.OUTPUTS.OUTPUT_SCRIPT),
-        { appendTo: { arg: 'output script', destination: `output ${i}` } },
+        { appendTo: { arg: 'output_script', destination: `output_${i}` } },
       );
 
       // Appending final output
       appendTo(outputLogger, this.logger.getValue(txConstants.OUTPUTS.SELF));
-      appendTo(
+      appendToTransaction(
         output,
         this.transactionDict.getValue(txConstants.OUTPUTS.SELF),
+        this.transactionDict,
         this.logger.getValue(txConstants.OUTPUTS.SELF),
-        { appendTo: { arg: `output ${i}`, destination: 'transaction' } },
+        { appendTo: { arg: `output_${i}`, destination: 'transaction' } },
       );
     }
   }
 
-  pushtx() {
+  pushtx(network = 'testnet') {
     const txString = utils.joinArray(this.transactionDict).join('');
-    return services.pushtx(txString)
+    return services.pushtx(txString, network)
       .then(response => response)
       .catch((error) => {
         throw error;

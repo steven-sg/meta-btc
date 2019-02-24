@@ -1,11 +1,14 @@
 const axios = require('axios');
 
-function pushtx(tx, network) {
-  return axios.post('https://api.blockcypher.com/v1/btc/test3/txs/push', JSON.stringify({ tx }));
+function pushtx(tx, network = 'testnet') {
+  // TODO make this a switch
+  const net = network.toUpperCase() === 'MAINNET' ? 'main' : 'test3';
+  return axios.post(`https://api.blockcypher.com/v1/btc/${net}/txs/push`, JSON.stringify({ tx }));
 }
 
-function pullUnspentTransactions(address, network) {
-  return axios.get(`https://api.blockcypher.com/v1/btc/test3/addrs/${address}?unspentOnly=true`)
+function pullUnspentTransactions(address, network = 'testnet') {
+  const net = network.toUpperCase() === 'MAINNET' ? 'main' : 'test3';
+  return axios.get(`https://api.blockcypher.com/v1/btc/${net}/addrs/${address}?unspentOnly=true`)
     .then((response) => {
       let txs = Array.isArray(response.data.txrefs) ? response.data.txrefs : [response.data.txrefs];
       if (!txs[0]) {
@@ -17,12 +20,13 @@ function pullUnspentTransactions(address, network) {
         }
         return `${acc};${tx.tx_hash}`;
       }, '');
-      return axios.get(`https://api.blockcypher.com/v1/btc/test3/txs/${txs}`);
+      return axios.get(`https://api.blockcypher.com/v1/btc/${net}/txs/${txs}`);
     });
 }
 
-function pullMetadata(network) {
-  return axios.get('https://api.blockcypher.com/v1/btc/test3');
+function pullMetadata(network = 'testnet') {
+  const net = network.toUpperCase() === 'MAINNET' ? 'main' : 'test3';
+  return axios.get(`https://api.blockcypher.com/v1/btc/${net}`);
 }
 
 module.exports = {

@@ -7,6 +7,7 @@ const ecdsa = new ec('secp256k1');
 const RIPEMD160 = require('ripemd160');
 const { log } = require('./logger');
 const { OrderedDict } = require('./dataStructures');
+const { ActionLog, ConversionLog } = require('./model/transaction');
 
 class InvalidInputFormat extends Error {
   constructor(message) {
@@ -63,6 +64,13 @@ class Tuple {
   }
 }
 
+function getTemplateValue(label, value) {
+  if (label) {
+    return `${label}::${value}`;
+  }
+  return value;
+}
+
 function isHexString(str) {
   return /^[0-9A-F]*$/i.test(str);
 }
@@ -97,6 +105,9 @@ function joinArray(array, arrayObject = new ArrayObject()) {
     });
   } else if (array instanceof Tuple) {
     arrayObject.array.push(array.getValues());
+  } else if (array instanceof ActionLog) {
+    // TODO this doesnt work
+    arrayObject.array.push(array.getValues());
   } else {
     arrayObject.array.push(array);
   }
@@ -109,8 +120,10 @@ function sha256(hexString, logger, xTemplate = {}) {
   const hexDigest = md.digest().toHex();
   // logging
   if (logger) {
-    log(logger, new Tuple(
-      `SHA256 hash ${xTemplate.hexString || hexString}`,
+    const templateValue = getTemplateValue(xTemplate.hexString, hexString);
+    log(logger, new ActionLog(
+      'SHA256 Hash',
+      `${templateValue}`,
       `${hexDigest}`,
     ));
   }
@@ -131,8 +144,10 @@ function convertToLittleEndian(hexString, logger, xTemplate = {}) {
   const hexedLE = hexString.match(/.{2}/g).reverse().join('');
   // logging
   if (logger) {
-    log(logger, new Tuple(
-      `Convert ${xTemplate.hexString || hexString} to little endian`,
+    const templateValue = getTemplateValue(xTemplate.hexString, hexString);
+    log(logger, new ConversionLog(
+      `${templateValue}`,
+      'little endian',
       `${hexedLE}`,
     ));
   }
@@ -146,8 +161,10 @@ function convertIntegerToBytes(integer, bytes, logger, xTemplate = {}) {
   const hexedInteger = buff.toString('hex');
   // logging
   if (logger) {
-    log(logger, new Tuple(
-      `Convert ${xTemplate.integer || integer} to ${bytes} bytes hex`,
+    const templateValue = getTemplateValue(xTemplate.convertIntegerToBytes_integer, integer);
+    log(logger, new ConversionLog(
+      `${templateValue}`,
+      `${bytes} bytes hex`,
       `${hexedInteger}`,
     ));
   }
@@ -171,8 +188,10 @@ function getByteLength(string, logger, xTemplate = {}) {
   const byteLength = Buffer.byteLength(string, 'hex');
   // logging
   if (logger) {
-    log(logger, new Tuple(
-      `Get byte length of ${xTemplate.string || string}`,
+    const templateValue = getTemplateValue(xTemplate.string, string);
+    log(logger, new ActionLog(
+      'Get',
+      `byte length of ${templateValue}`,
       `${byteLength}`,
     ));
   }
@@ -225,8 +244,10 @@ function b58decode(string, logger, xTemplate = {}) {
   const decodedString = base58.decode(string).toString('hex');
   // logging
   if (logger) {
-    log(logger, new Tuple(
-      `Base58 decode ${xTemplate.string || string}`,
+    const templateValue = getTemplateValue(xTemplate.string, string);
+    log(logger, new ActionLog(
+      'Base58 Decode',
+      `${templateValue}`,
       `${decodedString}`,
     ));
   }
@@ -242,9 +263,10 @@ function stripAddress(address, logger) {
   const strippedAddress = address.slice(2, -8);
   // logging
   if (logger) {
-    log(logger, new Tuple(
-      'Remove network bytes and checksum',
-      strippedAddress,
+    log(logger, new ActionLog(
+      'Remove',
+      'network bytes and checksum',
+      `${strippedAddress}`,
     ));
   }
   // continuation
@@ -258,12 +280,13 @@ function decodePrivKey(privateKey, logger, xTemplate = {}) {
   // todo rename stripAddress
   // const hexPriv = stripAddress(decodedPriv, logger, xTemplate);
   // todo why is the above line wrong?
+  // missing log?
   const hexPriv = decodedPriv.slice(2, 66);
   return hexPriv;
 }
 
 function ecdsaFromPriv(privateKey, logger) {
-  const hexPriv = decodePrivKey(privateKey, logger, { string: 'private key' });
+  const hexPriv = decodePrivKey(privateKey, logger, { string: 'private_key' });
   return ecdsa.keyFromPrivate(hexPriv);
 }
 
@@ -283,27 +306,39 @@ function encodePub(publicKey, logger) {
   const compressedHex = prefix + hexSegmentA;
 
   if (logger) {
-    log(logger, ['Encoding public key as compressed hex']);
-    log(logger, new Tuple(
-      'Strip public key',
-      strippedPub,
+    log(logger, new ActionLog(
+      'Encode',
+      `public_key::${publicKey} as compressed hex`,
+      null,
+      [
+        new ActionLog(
+          'Strip',
+          'public_key',
+          `${strippedPub}`,
+        ),
+        new ActionLog(
+          'Segment',
+          'stripped key',
+          `segment_a:${hexSegmentA}, segment_b:${hexSegmentB}`,
+        ),
+        new ActionLog(
+          'Modulo',
+          'segment_b value by 2',
+          `${bModulo}`,
+        ),
+        new ActionLog(
+          'Create Byte Prefix',
+          'from adding value 2 to the modulo and appending 0 to the start',
+          `${prefix}`,
+        ),
+        new ActionLog(
+          'Combine',
+          'the prefix with segment_a',
+          `${compressedHex}`,
+        ),
+      ],
     ));
-    log(logger, new Tuple(
-      'Segment stripped key',
-      `A:${hexSegmentA}, B:${hexSegmentB}`,
-    ));
-    log(logger, new Tuple(
-      'Modulo Segment B value by 2',
-      bModulo,
-    ));
-    log(logger, new Tuple(
-      'Create byte prefix from adding value 2 to the modulo and appending 0 to the start',
-      prefix,
-    ));
-    log(logger, new Tuple(
-      'Combine the prefix with Segment A',
-      compressedHex,
-    ));
+    // TODO multi subaction action
   }
 
   return compressedHex;
@@ -454,4 +489,5 @@ module.exports = {
   getScriptFormat,
   InvalidScriptFormat,
   isDecimalString,
+  getTemplateValue,
 };
