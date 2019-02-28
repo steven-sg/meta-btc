@@ -242,14 +242,20 @@ class ModularTransaction {
         { string: 'signature' },
       );
       appendTo(
-        signatureLength,
+        {
+          key: 'signature_length',
+          value: signatureLength,
+        },
         input.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
         null,
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
         { appendTo: { destination: 'signed_script_pub_key' } },
       );
       appendTo(
-        txHEX,
+        {
+          key: 'signature',
+          value: txHEX,
+        },
         input.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
         null,
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
@@ -274,14 +280,20 @@ class ModularTransaction {
         { string: 'public_key' },
       );
       appendTo(
-        publicKeyLength,
+        {
+          key: 'public_key_length',
+          value: publicKeyLength,
+        },
         input.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
         null,
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
         { appendTo: { destination: 'signed_script_pub_key' } },
       );
       appendTo(
-        encodedPub,
+        {
+          key: 'public_key',
+          value: encodedPub,
+        },
         input.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
         null,
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
@@ -290,7 +302,7 @@ class ModularTransaction {
 
       input.setValue(
         txConstants.INPUTS.SCRIPT_PUB_KEY_LENGTH,
-        [utils.getByteLengthInBytes(input.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY).join(''))],
+        [utils.getByteLengthInBytes(utils.joinArray(input.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY)).join(''))],
       );
       input.setValue(
         txConstants.INPUTS.SCRIPT_PUB_KEY,
@@ -301,7 +313,6 @@ class ModularTransaction {
         new ActionLog(
           'Replace',
           'script_pub_key length with signature length',
-          'TODO',
         ),
       );
       log(
@@ -309,10 +320,9 @@ class ModularTransaction {
         new ActionLog(
           'Replace',
           'script_pub_key with signature',
-          'TODO',
         ),
       );
-      appendTo(inputLogger, this.logger.getValue(txConstants.SIGNED_INPUTS));
+      appendTo([inputLogger], this.logger.getValue(txConstants.SIGNED_INPUTS));
       // TODO is the logging for this logic still valid after the change?
       signedInputs.push(input);
     }
@@ -431,12 +441,13 @@ class ModularTransaction {
         { appendTo: { arg: 'sequence', destination: `input_${i}` } },
       );
       // Appending final input
-      appendTo(inputLogger, this.logger.getValue(txConstants.INPUTS.SELF));
+      // append the input as an array
+      appendTo([inputLogger], this.logger.getValue(txConstants.INPUTS.SELF));
       appendToTransaction(
         input,
         this.transactionDict.getValue(txConstants.INPUTS.SELF),
         this.transactionDict,
-        this.logger.getValue(txConstants.INPUTS.SELF),
+        this.logger.getValue(txConstants.INPUTS.SELF)[i],
         { appendTo: { arg: `input_${i}`, destination: 'transaction' } },
       );
     }
@@ -496,12 +507,12 @@ class ModularTransaction {
       );
 
       // Appending final output
-      appendTo(outputLogger, this.logger.getValue(txConstants.OUTPUTS.SELF));
+      appendTo([outputLogger], this.logger.getValue(txConstants.OUTPUTS.SELF));
       appendToTransaction(
         output,
         this.transactionDict.getValue(txConstants.OUTPUTS.SELF),
         this.transactionDict,
-        this.logger.getValue(txConstants.OUTPUTS.SELF),
+        this.logger.getValue(txConstants.OUTPUTS.SELF)[i],
         { appendTo: { arg: `output_${i}`, destination: 'transaction' } },
       );
     }
