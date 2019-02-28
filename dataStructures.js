@@ -12,7 +12,18 @@ class OrderedDict {
     const dict = new OrderedDict(keys);
 
     keys.forEach((key) => {
-      dict.setValue(key, oldDict.getValue(key));
+      let value;
+      if (Array.isArray(oldDict.getValue(key))) {
+        value = oldDict.getValue(key).map((val) => {
+          if (val instanceof OrderedDict) {
+            return OrderedDict.copy(val);
+          }
+          return JSON.parse(JSON.stringify(val));
+        });
+      } else {
+        value = JSON.parse(JSON.stringify(oldDict.getValue(key)));
+      }
+      dict.setValue(key, value);
     });
 
     return dict;
@@ -37,6 +48,21 @@ class OrderedDict {
     const valueList = [];
     this.keys.forEach((key) => {
       valueList.push(this.vals[key]);
+    });
+    return valueList;
+  }
+
+  getArray() {
+    const valueList = [];
+    this.keys.forEach((key) => {
+      const values = this.vals[key] && this.vals[key].map((value) => {
+        return value instanceof OrderedDict ? value.getArray() : value;
+      });
+
+      valueList.push({
+        key,
+        value: values,
+      });
     });
     return valueList;
   }

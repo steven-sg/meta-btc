@@ -105,9 +105,6 @@ function joinArray(array, arrayObject = new ArrayObject()) {
     });
   } else if (array instanceof Tuple) {
     arrayObject.array.push(array.getValues());
-  } else if (array instanceof ActionLog) {
-    // TODO this doesnt work
-    arrayObject.array.push(array.getValues());
   } else if (array && array.key && array.value) {
     joinArray(array.value, arrayObject);
   } else {

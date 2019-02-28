@@ -49,11 +49,11 @@ class ActionLog {
   }
 
   hasResult() {
-    return this.result[0] !== undefined;
+    return this.result[0] !== undefined && this.result[0] !== null;
   }
 
   hasSubaction() {
-    return this.subaction[0] !== undefined;
+    return this.subaction[0] !== undefined && this.subaction[0] !== null;
   }
 }
 
@@ -65,8 +65,9 @@ class AppendLog extends ActionLog {
   }
 }
 class AppendTransactionLog extends AppendLog {
-  constructor(appendage, to, result) {
+  constructor(appendage, to, result, transactionDict) {
     super(appendage, `transaction::${to}`, `transaction::${result}`);
+    this.transactionDict = transactionDict;
   }
 }
 class ConversionLog extends ActionLog {
@@ -74,6 +75,13 @@ class ConversionLog extends ActionLog {
     super('Convert', `${from} to ${to}`, result);
     this.from = from;
     this.to = to;
+  }
+}
+
+class ReplaceLog extends ActionLog {
+  constructor(original, substitute, result, transactionDict) {
+    super('Replace', `${original} with ${substitute}`, result);
+    this.transactionDict = transactionDict;
   }
 }
 
@@ -86,4 +94,5 @@ module.exports = {
   ConversionLog,
   AppendLog,
   AppendTransactionLog,
+  ReplaceLog,
 };

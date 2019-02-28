@@ -5,7 +5,7 @@ const { log } = require('./logger');
 const { OrderedDict } = require('./dataStructures');
 const services = require('./services/services');
 const scripts = require('./scripts');
-const { ActionLog, ConversionLog, AppendLog, AppendTransactionLog } = require('./model/transaction');
+const { ActionLog, ConversionLog, AppendLog, AppendTransactionLog, ReplaceLog } = require('./model/transaction');
 
 const N = new BN('115792089237316195423570985008687907852837564279074904382605163141518161494337');
 
@@ -42,11 +42,16 @@ const txConstants = {
   HASH_CODE_TYPE: 'hash code type',
 };
 
+function simpleAppend(value, array) {
+  array.push(value);
+}
+
 function appendTo(arg, array, parentArray, logger = null, xtemplate = {}) {
-  const prevValues = parentArray ? `${utils.joinArray(parentArray).join('')}${array.join('')}` : array.join('');
-  array.push(arg);
+  const prevValues = parentArray ? `${utils.joinArray(parentArray).join('')}${utils.joinArray(array).join('')}` : utils.joinArray(array).join('');
+  simpleAppend(arg, array);
   if (logger) {
-    const appendageTemplate = utils.getTemplateValue(xtemplate.appendTo.arg, arg);
+    const appendage = utils.joinArray(arg).join('');
+    const appendageTemplate = utils.getTemplateValue(xtemplate.appendTo.arg, appendage);
     const toTemplate = utils.getTemplateValue(xtemplate.appendTo.destination, prevValues || 'EMPTY');
     log(logger, new AppendLog(
       `${appendageTemplate}`,
@@ -70,6 +75,7 @@ function appendToTransaction(arg, array, transaction, logger = null, xtemplate =
       `${appendageTemplate}`,
       `${toTemplate}`,
       `${prevTransaction}${utils.joinArray(array).join('')}`,
+      OrderedDict.copy(transaction),
     ));
   }
 }
@@ -168,8 +174,8 @@ class ModularTransaction {
           this.transactionDict.vals.inputs[j].vals[txConstants.INPUTS.SCRIPT_PUB_KEY_LENGTH] = scriptPubKeyLength;
           this.transactionDict.vals.inputs[j].vals[txConstants.INPUTS.SCRIPT_PUB_KEY] = scriptPubKey;
         } else {
-          this.transactionDict.vals.inputs[j].vals[txConstants.INPUTS.SCRIPT_PUB_KEY_LENGTH] = '00';
-          this.transactionDict.vals.inputs[j].vals[txConstants.INPUTS.SCRIPT_PUB_KEY] = '';
+          this.transactionDict.vals.inputs[j].vals[txConstants.INPUTS.SCRIPT_PUB_KEY_LENGTH] = ['00'];
+          this.transactionDict.vals.inputs[j].vals[txConstants.INPUTS.SCRIPT_PUB_KEY] = [''];
         }
       }
       const input = OrderedDict.copy(rawInputi);
@@ -300,34 +306,46 @@ class ModularTransaction {
         { appendTo: { destination: 'signed_script_pub_key' } },
       );
 
+      const scriptAsString = utils.joinArray(input.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY)).join('');
+      const scriptLength = utils.getByteLengthInBytes(scriptAsString);
       input.setValue(
         txConstants.INPUTS.SCRIPT_PUB_KEY_LENGTH,
-        [utils.getByteLengthInBytes(utils.joinArray(input.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY)).join(''))],
+        [scriptLength],
       );
+
       input.setValue(
         txConstants.INPUTS.SCRIPT_PUB_KEY,
         input.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
       );
+
+      const transactionState = OrderedDict.copy(this.transactionDict);
+      transactionState.vals.inputs[i] = OrderedDict.copy(input);
       log(
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        new ActionLog(
-          'Replace',
-          'script_pub_key length with signature length',
+        new ReplaceLog(
+          'script length',
+          `${scriptLength}`,
+          null,
+          transactionState,
         ),
       );
       log(
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        new ActionLog(
-          'Replace',
-          'script_pub_key with signature',
+        new ReplaceLog(
+          'script',
+          `${scriptAsString}`,
+          null,
+          transactionState,
         ),
       );
-      appendTo([inputLogger], this.logger.getValue(txConstants.SIGNED_INPUTS));
+      simpleAppend([inputLogger], this.logger.getValue(txConstants.SIGNED_INPUTS));
       // TODO is the logging for this logic still valid after the change?
+      // this.transactionDict.vals.inputs[i] = input;
       signedInputs.push(input);
     }
     this.transactionDict.vals.inputs = signedInputs;
     // END TODO
+    // TODO hashcode prob needs its own type
     this.transactionDict.remove(txConstants.HASH_CODE_TYPE);
   }
 
@@ -442,7 +460,7 @@ class ModularTransaction {
       );
       // Appending final input
       // append the input as an array
-      appendTo([inputLogger], this.logger.getValue(txConstants.INPUTS.SELF));
+      simpleAppend([inputLogger], this.logger.getValue(txConstants.INPUTS.SELF));
       appendToTransaction(
         input,
         this.transactionDict.getValue(txConstants.INPUTS.SELF),
@@ -507,7 +525,7 @@ class ModularTransaction {
       );
 
       // Appending final output
-      appendTo([outputLogger], this.logger.getValue(txConstants.OUTPUTS.SELF));
+      simpleAppend([outputLogger], this.logger.getValue(txConstants.OUTPUTS.SELF));
       appendToTransaction(
         output,
         this.transactionDict.getValue(txConstants.OUTPUTS.SELF),
