@@ -5,22 +5,24 @@ function bytesTokB(bytes) {
   return (bytes / 1000);
 }
 
-function formatFee(fee, bytes, format='kB', currency='btc') {
-  // TODO
-  // takes in satoshi
-  // if !currency
-  // returns kilobytes
-  return fee / bytesTokB(bytes);
+function formatSize(size, format) {
+  const pformat = format.toUpperCase();
+  if (pformat === 'BYTES' || pformat === 'BYTE') {
+    return size;
+  } if (pformat === 'KB') {
+    return bytesTokB(size);
+  }
+  throw new Error('Unrecognised format.');
 }
 
-function getFeeRate(transaction, fee) {
+function getFeeRate(transaction, fee, format = 'bytes') {
   const byteSize = utils.getByteLength(transaction.getRawString());
-  return formatFee(fee, byteSize);
+  return fee / formatSize(byteSize, format);
 }
 
-function getTotalFees(transaction, feeRate) {
+function getTotalFees(transaction, feeRate, format = 'bytes') {
   const byteSize = utils.getByteLength(transaction.getRawString());
-  return feeRate * bytesTokB(byteSize);
+  return feeRate * formatSize(byteSize, format);
 }
 
 function calculateChangePayment(balance, fee, address) {
@@ -28,7 +30,7 @@ function calculateChangePayment(balance, fee, address) {
 }
 
 module.exports = {
-  formatFee,
+  formatSize,
   getFeeRate,
   getTotalFees,
   calculateChangePayment,
