@@ -109,6 +109,10 @@ class ModularTransaction {
     this.hashCodeType = '01000000';
   }
 
+  setLockTime(lockTime) {
+    this.lockTime = lockTime;
+  }
+
   createRawTransaction() {
     this.appendVersionCode();
 

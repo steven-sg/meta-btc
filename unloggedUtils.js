@@ -54,8 +54,8 @@ function convertCurrencyTo(value, convertTo, convertFrom = 'satoshi') {
 }
 
 function getScriptFormat(script) {
-  const pscript = script.toLowerCase();
-  if (pscript.startsWith('76a914') && pscript.endsWith('88ac')) {
+  const pscript = script.toUpperCase();
+  if (pscript.startsWith('76A914') && pscript.endsWith('88AC') && /^[0-9A-F]+$/.test(pscript)) {
     return 'pay-to-pubkey-hash';
   }
   throw new InvalidScriptFormat('Invalid or unsupported script format. Please use pay-to-pubkey-hash.');

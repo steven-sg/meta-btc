@@ -72,7 +72,11 @@ function getTemplateValue(label, value) {
 }
 
 function isHexString(str) {
-  return /^[0-9A-F]*$/i.test(str);
+  return /^[0-9A-F]*$/i.test(str.toUpperCase());
+}
+
+function isBase58(string) {
+  return /^[1-9a-km-zA-HJ-NP-Z]+$/.test(string);
 }
 
 function isDecimalString(str, regex = false) {
@@ -84,14 +88,11 @@ function isDecimalString(str, regex = false) {
 }
 
 function isAlphaNumeric(str) {
-  return /^[0-9A-Z]*$/i.test(str);
+  return /^[0-9A-Z]*$/i.test(str.toUpperCase());
 }
 
 function isIterable(structure) {
-  if (Array.isArray(structure)) {
-    return true;
-  }
-  return false;
+  return Array.isArray(structure);
 }
 
 function joinArray(array, arrayObject = new ArrayObject()) {
@@ -351,9 +352,9 @@ function getPrivateKeyFormat(key) {
     return 'hex';
   } if (key.length === 66 && isHexString(key)) {
     return 'hex_compressed';
-  } if (key.length === 51 && isAlphaNumeric(key)) {
+  } if (key.length === 51 && isBase58(key)) {
     return 'wif';
-  } if (key.length === 52 && isAlphaNumeric(key)) {
+  } if (key.length === 52 && isBase58(key)) {
     return 'wif_compressed';
   }
   throw new InvalidInputFormat();
@@ -373,9 +374,10 @@ function getWifNetwork(key) {
 }
 
 function getAddressFormat(address) {
-  if (address.startsWith('1')
+  if ((address.startsWith('1')
       || address.startsWith('m')
-      || address.startsWith('n')) {
+      || address.startsWith('n'))
+      && isBase58(address)) {
     return 'p2pkh';
   } if (address.startsWith('3')
         || address.startsWith('2')) {
@@ -489,4 +491,6 @@ module.exports = {
   InvalidScriptFormat,
   isDecimalString,
   getTemplateValue,
+  isBase58,
+  isHexString,
 };
