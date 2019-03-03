@@ -18,8 +18,16 @@ function pullUnspentTransactions(address, network) {
       }
       const data = Array.isArray(response.data) ? response.data : [response.data];
       const txs = data.map((tx) => {
-        let outputs = Array.isArray(tx.outputs) ? tx.outputs : [tx.outputs];
-        outputs = outputs.map((output, index) => new transaction.TransactionOutput(index, output.script, output.value));
+        const outputDataArray = Array.isArray(tx.outputs) ? tx.outputs : [tx.outputs];
+        const outputs = [];
+        for (let index = 0; index < outputDataArray.length; index += 1) {
+          const output = outputDataArray[index];
+          if (output.script_type === 'pay-to-pubkey-hash'
+              && output.addresses.length === 1
+              && output.addresses[0] === address) {
+            outputs.push(new transaction.TransactionOutput(index, output.script, output.value, address));
+          }
+        }
         return new transaction.Transaction(tx.hash, outputs);
       });
       return new ServiceResponse(response.status, txs);

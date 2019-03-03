@@ -23,6 +23,7 @@
     "buffer": "^5.2.1",
     "elliptic": "^6.4.1",
     "node-forge": "^0.7.6",
-    "ripemd160": "^2.0.2"
+    "ripemd160": "^2.0.2",
+    "safe-buffer": "^5.1.2"
   }
 }

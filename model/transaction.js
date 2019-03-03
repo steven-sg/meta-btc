@@ -1,8 +1,9 @@
 class TransactionOutput {
-  constructor(outputIndex, scriptPubKey, balance) {
+  constructor(outputIndex, scriptPubKey, balance, address) {
     this.outputIndex = outputIndex;
     this.scriptPubKey = scriptPubKey;
     this.balance = balance;
+    this.address = address;
   }
 }
 
