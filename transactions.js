@@ -10,13 +10,15 @@ const { ActionLog, ConversionLog, AppendLog, AppendTransactionLog, ReplaceLog } 
 const N = new BN('115792089237316195423570985008687907852837564279074904382605163141518161494337');
 
 function createOutputScript(address, logger) {
-  const p2pkhScript = scripts.p2pkh.createScript(address);
+  // TODO make a generic script class w/ name property
+  const script = scripts.createScript(address);
+  const scriptFormat = scripts.getScriptFormat(script);
   log(logger, new ActionLog(
     'Create',
-    'P2PKH Script',
-    `${p2pkhScript}`,
+    `${scriptFormat} script`,
+    `${script}`,
   ));
-  return p2pkhScript;
+  return script;
 }
 
 const txConstants = {
@@ -551,6 +553,10 @@ class ModularTransaction {
 
   getRawString() {
     return utils.joinArray(this.transactionDict).join('');
+  }
+
+  getSize() {
+    return utils.getByteLength(this.getRawString());
   }
 }
 

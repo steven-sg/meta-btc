@@ -17,19 +17,23 @@ function pullUnspentTransactions(address, network) {
         throw new InternalError(`An error has occured. ${address} has no spendable balance.`);
       }
       const data = Array.isArray(response.data) ? response.data : [response.data];
-      const txs = data.map((tx) => {
-        const outputDataArray = Array.isArray(tx.outputs) ? tx.outputs : [tx.outputs];
-        const outputs = [];
-        for (let index = 0; index < outputDataArray.length; index += 1) {
-          const output = outputDataArray[index];
-          if (output.script_type === 'pay-to-pubkey-hash'
-              && output.addresses.length === 1
-              && output.addresses[0] === address) {
-            outputs.push(new transaction.TransactionOutput(index, output.script, output.value, address));
+      const txs = [];
+      for (let index = 0; index < data.length; index += 1) {
+        const tx = data[index];
+        if (tx.confirmations >= 6) {
+          const outputDataArray = Array.isArray(tx.outputs) ? tx.outputs : [tx.outputs];
+          const outputs = [];
+          for (let subindex = 0; subindex < outputDataArray.length; subindex += 1) {
+            const output = outputDataArray[subindex];
+            if (output.script_type === 'pay-to-pubkey-hash'
+                && output.addresses.length === 1
+                && output.addresses[0] === address) {
+              outputs.push(new transaction.TransactionOutput(subindex, output.script, output.value, address));
+            }
           }
+          txs.push(new transaction.Transaction(tx.hash, outputs));
         }
-        return new transaction.Transaction(tx.hash, outputs);
-      });
+      }
       return new ServiceResponse(response.status, txs);
     })
     .catch((error) => {

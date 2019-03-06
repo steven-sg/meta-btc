@@ -32,7 +32,7 @@ class UnsupportedScriptFormat extends Error {
     this.message = message;
   }
 }
-
+// TODO: remove in favor of the one in script util file
 class InvalidScriptFormat extends Error {
   constructor(message) {
     super(message);
@@ -232,6 +232,7 @@ function convertCurrencyTo(value, convertTo, convertFrom = 'satoshi') {
   }
 }
 
+// TODO: remove in favor of the one in script util file
 function getScriptFormat(script) {
   const pscript = script.toLowerCase();
   if (pscript.startsWith('76a914') && pscript.endsWith('88ac')) {
