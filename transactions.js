@@ -284,7 +284,16 @@ class ModularTransaction {
         ),
       );
 
-      const encodedPub = utils.encodePub(publicKey, inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY));
+      let encodedPub;
+      if (utils.getPrivateKeyFormat(privateKeys[i]) === 'wif_compressed') {
+        // encodes in pub key as compressed if priv is compressed
+        encodedPub = utils.encodePub(publicKey, inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY));
+      } else if (utils.getPrivateKeyFormat(privateKeys[i]) === 'wif') {
+        encodedPub = publicKey;
+      } else {
+        // TODO
+        throw new Error('Please encode your private keys in wif format');
+      }
 
       const publicKeyLength = utils.getByteLengthInBytes(
         encodedPub,

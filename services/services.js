@@ -4,7 +4,9 @@ const { ServiceResponse, ServiceError, InternalError } = require('./utils');
 
 function pushtx(tx, network) {
   return blockcypher.pushtx(tx, network)
-    .then(response => new ServiceResponse(response.status, response.data))
+    .then((response) => {
+      return new ServiceResponse(response.status, response.data)
+    })
     .catch((error) => {
       throw new ServiceError(error.response.status, error.response.data.error);
     });
@@ -20,19 +22,17 @@ function pullUnspentTransactions(address, network) {
       const txs = [];
       for (let index = 0; index < data.length; index += 1) {
         const tx = data[index];
-        if (tx.confirmations >= 6) {
-          const outputDataArray = Array.isArray(tx.outputs) ? tx.outputs : [tx.outputs];
-          const outputs = [];
-          for (let subindex = 0; subindex < outputDataArray.length; subindex += 1) {
-            const output = outputDataArray[subindex];
-            if (output.script_type === 'pay-to-pubkey-hash'
-                && output.addresses.length === 1
-                && output.addresses[0] === address) {
-              outputs.push(new transaction.TransactionOutput(subindex, output.script, output.value, address));
-            }
+        const outputDataArray = Array.isArray(tx.outputs) ? tx.outputs : [tx.outputs];
+        const outputs = [];
+        for (let subindex = 0; subindex < outputDataArray.length; subindex += 1) {
+          const output = outputDataArray[subindex];
+          if (output.script_type === 'pay-to-pubkey-hash'
+              && output.addresses.length === 1
+              && output.addresses[0] === address) {
+            outputs.push(new transaction.TransactionOutput(subindex, output.script, output.value, address));
           }
-          txs.push(new transaction.Transaction(tx.hash, outputs));
         }
+        txs.push(new transaction.Transaction(tx.hash, outputs));
       }
       return new ServiceResponse(response.status, txs);
     })
