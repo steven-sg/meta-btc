@@ -5,7 +5,7 @@ const { ServiceResponse, ServiceError, InternalError } = require('./utils');
 function pushtx(tx, network) {
   return blockcypher.pushtx(tx, network)
     .then((response) => {
-      return new ServiceResponse(response.status, response.data)
+      return new ServiceResponse(response.status, response.data);
     })
     .catch((error) => {
       throw new ServiceError(error.response.status, error.response.data.error);
