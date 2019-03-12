@@ -1,14 +1,39 @@
 const axios = require('axios');
+const { InvalidInputError } = require('../errors');
 
-function pushtx(tx, network = 'testnet') {
-  // TODO make this a switch
-  const net = network.toUpperCase() === 'MAINNET' ? 'main' : 'test3';
-  return axios.post(`https://api.blockcypher.com/v1/btc/${net}/txs/push`, JSON.stringify({ tx }));
+/**
+ *
+ * @param {'testnet' | 'mainnet'} network
+ */
+function getNetworkPath(network) {
+  switch (network.toUpperCase()) {
+    case 'MAINNET':
+      return 'main';
+    case 'TESTNET':
+      return 'test3';
+    default:
+      throw InvalidInputError(`Unrecognised network ${network}`);
+  }
 }
 
+/**
+ * push a transaction
+ * @param {string} tx raw transaction
+ * @param {'testnet' | 'mainnet'} network
+ */
+function pushtx(tx, network = 'testnet') {
+  const path = getNetworkPath(network);
+  return axios.post(`https://api.blockcypher.com/v1/btc/${path}/txs/push`, JSON.stringify({ tx }));
+}
+
+/**
+ * pull all unspent transactions belonging to an address
+ * @param {string} address a valid bitcoin address
+ * @param {'testnet' | 'mainnet'} network
+ */
 function pullUnspentTransactions(address, network = 'testnet') {
-  const net = network.toUpperCase() === 'MAINNET' ? 'main' : 'test3';
-  return axios.get(`https://api.blockcypher.com/v1/btc/${net}/addrs/${address}?unspentOnly=true`)
+  const path = getNetworkPath(network);
+  return axios.get(`https://api.blockcypher.com/v1/btc/${path}/addrs/${address}?unspentOnly=true`)
     .then((response) => {
       const txs = Array.isArray(response.data.txrefs) ? response.data.txrefs : [response.data.txrefs];
       if (!txs[0]) {
@@ -25,17 +50,11 @@ function pullUnspentTransactions(address, network = 'testnet') {
         return null;
       }
       const txParam = txMap.join(';');
-      return axios.get(`https://api.blockcypher.com/v1/btc/${net}/txs/${txParam}`);
+      return axios.get(`https://api.blockcypher.com/v1/btc/${path}/txs/${txParam}`);
     });
-}
-
-function pullMetadata(network = 'testnet') {
-  const net = network.toUpperCase() === 'MAINNET' ? 'main' : 'test3';
-  return axios.get(`https://api.blockcypher.com/v1/btc/${net}`);
 }
 
 module.exports = {
   pushtx,
-  pullMetadata,
   pullUnspentTransactions,
 };

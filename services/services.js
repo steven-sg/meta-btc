@@ -2,6 +2,11 @@ const blockcypher = require('./blockcypher');
 const transaction = require('../model/transaction');
 const { ServiceResponse, ServiceError, InternalError } = require('./utils');
 
+/**
+ * push a transaction
+ * @param {string} tx raw transaction
+ * @param {'testnet' | 'mainnet'} network
+ */
 function pushtx(tx, network) {
   return blockcypher.pushtx(tx, network)
     .then((response) => {
@@ -12,6 +17,11 @@ function pushtx(tx, network) {
     });
 }
 
+/**
+ * pull all unspent transactions belonging to an address
+ * @param {string} address a valid bitcoin address
+ * @param {'testnet' | 'mainnet'} network
+ */
 function pullUnspentTransactions(address, network) {
   return blockcypher.pullUnspentTransactions(address, network)
     .then((response) => {
@@ -44,16 +54,7 @@ function pullUnspentTransactions(address, network) {
     });
 }
 
-function pullMetadata(network) {
-  return blockcypher.pullMetadata(network)
-    .then(response => new ServiceResponse(response.status, response.data))
-    .catch((error) => {
-      throw new ServiceError(error.response.status, error.response.data.error);
-    });
-}
-
 module.exports = {
   pushtx,
-  pullMetadata,
   pullUnspentTransactions,
 };

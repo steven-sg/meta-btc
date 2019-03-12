@@ -1,4 +1,10 @@
+// TODO: move these to a different file
 class ServiceError extends Error {
+  /**
+   * @constructor
+   * @param {number} status
+   * @param {string} message
+   */
   constructor(status, message) {
     super(message);
     this.status = status;
@@ -7,6 +13,11 @@ class ServiceError extends Error {
 }
 
 class ServiceResponse {
+  /**
+   * @constructor
+   * @param {number} status
+   * @param {*} data
+   */
   constructor(status, data) {
     this.status = status;
     this.data = data;
@@ -14,6 +25,10 @@ class ServiceResponse {
 }
 
 class InternalError extends Error {
+  /**
+   * @constructor
+   * @param {string} message
+   */
   constructor(message) {
     super(message);
     this.message = message;

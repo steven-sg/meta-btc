@@ -5,7 +5,12 @@ const { log } = require('./logger');
 const { OrderedDict } = require('./dataStructures');
 const services = require('./services/services');
 const scripts = require('./scripts');
-const { ActionLog, ConversionLog, AppendLog, AppendTransactionLog, ReplaceLog } = require('./model/transaction');
+const {
+  ActionLog,
+  AppendLog,
+  AppendTransactionLog,
+  ReplaceLog,
+} = require('./model/transaction');
 
 const N = new BN('115792089237316195423570985008687907852837564279074904382605163141518161494337');
 
