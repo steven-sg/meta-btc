@@ -15,14 +15,7 @@ const {
 const N = new BN('115792089237316195423570985008687907852837564279074904382605163141518161494337');
 
 function createOutputScript(address, logger) {
-  // TODO make a generic script class w/ name property
-  const script = scripts.createScript(address);
-  const scriptFormat = scripts.getScriptFormat(script);
-  log(logger, new ActionLog(
-    'Create',
-    `${scriptFormat} script`,
-    `${script}`,
-  ));
+  const script = scripts.createScript(address, logger);
   return script;
 }
 
@@ -522,11 +515,13 @@ class ModularTransaction {
         { appendTo: { destination: `output_${i}` } },
       );
 
-      // TODO Should this use the logger?
-      const outputScript = createOutputScript(payment.to);
+      const outputScript = createOutputScript(
+        payment.to,
+        outputLogger.getValue(txConstants.OUTPUTS.OUTPUT_SCRIPT),
+      );
       const outputScriptLength = utils.getByteLengthInBytes(
         outputScript,
-        outputLogger.getValue(txConstants.OUTPUTS.TRANSACTION_AMOUNT),
+        outputLogger.getValue(txConstants.OUTPUTS.OUTPUT_SCRIPT_LENGTH),
         { string: 'output_script' },
       );
       appendTo(

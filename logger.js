@@ -1,5 +1,10 @@
 const { OrderedDict } = require('./dataStructures');
 
+/**
+ *
+ * @param {Array|OrderedDict} logger
+ * @param {*|Object} arg
+ */
 function log(logger, arg) {
   if (Array.isArray(logger)) {
     logger.push(arg);
@@ -7,6 +12,8 @@ function log(logger, arg) {
     const key = arg[0];
     const param = arg[1];
     logger.pushTo(key, param);
+  } else {
+    // TODO: this should throw an error but we need to catch this in frontend
   }
 }
 
