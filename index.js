@@ -5,6 +5,7 @@ const transactionModel = require('./model/transaction');
 const dataStructures = require('./dataStructures');
 const services = require('./services/services');
 const fees = require('./fees');
+const scripts = require('./scripts');
 
 module.exports = {
   transaction,
@@ -16,4 +17,5 @@ module.exports = {
   },
   fees,
   services,
+  scripts,
 };

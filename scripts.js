@@ -66,12 +66,12 @@ class P2SH {
 
 function getScriptFormat(script) {
   const pscript = script.toUpperCase();
-  if (pscript.startsWith('76A914') && pscript.endsWith('88AC')) {
+  if (pscript.startsWith('76A914') && pscript.endsWith('88AC') && utils.isHexString(script)) {
     return 'pay-to-pubkey-hash';
-  } if (pscript.startsWith('A914') && pscript.endsWith('87')) {
+  } if (pscript.startsWith('A914') && pscript.endsWith('87') && utils.isHexString(script)) {
     return 'pay-to-script-hash';
   }
-  throw new InvalidScriptFormat('Invalid or unsupported script format. Please use pay-to-pubkey-hash.');
+  throw new InvalidScriptFormat('Invalid or unsupported script format.');
 }
 
 function createScript(address, logger) {

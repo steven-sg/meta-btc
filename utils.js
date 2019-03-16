@@ -9,14 +9,14 @@ const { log } = require('./logger');
 const { OrderedDict } = require('./dataStructures');
 const { ActionLog, ConversionLog } = require('./model/transaction');
 
-class InvalidInputFormat extends Error {
+class InvalidInputError extends Error {
   /**
    *
    * @param {string} message
    */
   constructor(message) {
     super(message);
-    this.name = 'InvalidInputFormat';
+    this.name = 'InvalidInputError';
     this.message = message;
   }
 }
@@ -29,30 +29,6 @@ class CurrencyConversionError extends Error {
   constructor(message) {
     super(message);
     this.name = 'CurrencyConversionError';
-    this.message = message;
-  }
-}
-
-class UnsupportedScriptFormat extends Error {
-  /**
-   *
-   * @param {string} message
-   */
-  constructor(message) {
-    super(message);
-    this.name = 'UnsupportedScriptFormat';
-    this.message = message;
-  }
-}
-// TODO: remove in favor of the one in script util file
-class InvalidScriptFormat extends Error {
-  /**
-   *
-   * @param {string} message
-   */
-  constructor(message) {
-    super(message);
-    this.name = 'InvalidScriptFormat';
     this.message = message;
   }
 }
@@ -334,15 +310,6 @@ function convertCurrencyTo(value, convertTo, convertFrom = 'SATOSHI') {
   }
 }
 
-// TODO: remove in favor of the one in script util file
-function getScriptFormat(script) {
-  const pscript = script.toLowerCase();
-  if (pscript.startsWith('76a914') && pscript.endsWith('88ac')) {
-    return 'pay-to-pubkey-hash';
-  }
-  throw new InvalidScriptFormat('Invalid or unsupported script format. Please use pay-to-pubkey-hash.');
-}
-
 /**
  *
  * @param {string} string
@@ -488,7 +455,7 @@ function encodePub(publicKey, logger) {
  *
  * @param {*} key
  * @returns {'decimal'|'hex'|'hex_compressed'|'wif'|'wif_compressed'}
- * @throws {InvalidInputFormat}
+ * @throws {InvalidInputError}
  */
 function getPrivateKeyFormat(key) {
   if (isDecimalString(key)) {
@@ -502,14 +469,14 @@ function getPrivateKeyFormat(key) {
   } if (key.length === 52 && isBase58(key)) {
     return 'wif_compressed';
   }
-  throw new InvalidInputFormat();
+  throw new InvalidInputError();
 }
 
 /**
  *
  * @param {string} key
  * @returns {'mainnet'|'testnet'}
- * @throws {InvalidInputFormat}
+ * @throws {InvalidInputError}
  */
 function getWifNetwork(key) {
   const ikey = key.toLowerCase();
@@ -521,14 +488,14 @@ function getWifNetwork(key) {
       || ikey.startsWith('c')) {
     return 'testnet';
   }
-  throw new InvalidInputFormat();
+  throw new InvalidInputError();
 }
 
 /**
  *
  * @param {string} address
  * @returns {'p2pkh'|'p2sh'}
- * @throws {InvalidInputFormat}
+ * @throws {InvalidInputError}
  */
 function getAddressFormat(address) {
   if ((address.startsWith('1')
@@ -540,14 +507,14 @@ function getAddressFormat(address) {
         || address.startsWith('2')) {
     return 'p2sh';
   }
-  throw new InvalidInputFormat(`${address} does not adhere to any known format.`);
+  throw new InvalidInputError(`${address} does not adhere to any known format.`);
 }
 
 /**
  *
  * @param {string} address
  * @returns {'mainnet'|'testnet'}
- * @throws {InvalidInputFormat}
+ * @throws {InvalidInputError}
  */
 function getAddressNetwork(address) {
   if (address.startsWith('1')
@@ -558,7 +525,7 @@ function getAddressNetwork(address) {
         || address.startsWith('2')) {
     return 'testnet';
   }
-  throw new InvalidInputFormat(`${address} does not adhere to any known format.`);
+  throw new InvalidInputError(`${address} does not adhere to any known format.`);
 }
 
 /**
@@ -584,7 +551,7 @@ function networkPrependDoubleHashChecksumAppendBase58(key, networkPrefix) {
  * @param {'p2pkh'|'p2sh'} type
  * @param {'mainnet'|'testnet'} network
  * @returns {string}
- * @throws {InvalidInputFormat}
+ * @throws {InvalidInputError}
  */
 function getAddressPrefix(encoding, type = 'p2pkh', network = 'mainnet') {
   const prefixes = {
@@ -614,7 +581,7 @@ function getAddressPrefix(encoding, type = 'p2pkh', network = 'mainnet') {
   if (encodingType[network]) {
     return encodingType[network];
   }
-  throw new InvalidInputFormat('Unrecognised argument(s).');
+  throw new InvalidInputError('Unrecognised argument(s).');
 }
 
 /**
@@ -651,7 +618,7 @@ function privToAddress(priv, network = 'mainnet') {
 }
 
 module.exports = {
-  InvalidInputFormat,
+  InvalidInputError,
   isIterable,
   joinArray,
   convertToLittleEndian,
@@ -679,9 +646,6 @@ module.exports = {
   convertCurrencyTo,
   CurrencyConversionError,
   convertCurrencyToSatoshi,
-  UnsupportedScriptFormat,
-  getScriptFormat,
-  InvalidScriptFormat,
   isDecimalString,
   getTemplateValue,
   isBase58,

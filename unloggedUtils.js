@@ -10,30 +10,6 @@ class CurrencyConversionError extends Error {
   }
 }
 
-class UnsupportedScriptFormat extends Error {
-  /**
-   *
-   * @param {string} message
-   */
-  constructor(message) {
-    super(message);
-    this.name = 'UnsupportedScriptFormat';
-    this.message = message;
-  }
-}
-
-class InvalidScriptFormat extends Error {
-  /**
-   *
-   * @param {string} message
-   */
-  constructor(message) {
-    super(message);
-    this.name = 'InvalidScriptFormat';
-    this.message = message;
-  }
-}
-
 /**
  *
  * @param {number} bytes
@@ -85,25 +61,9 @@ function convertCurrencyTo(value, convertTo, convertFrom = 'satoshi') {
   }
 }
 
-/**
- *
- * @param {string} script
- * @throws {InvalidScriptFormat}
- */
-function getScriptFormat(script) {
-  const pscript = script.toUpperCase();
-  if (pscript.startsWith('76A914') && pscript.endsWith('88AC') && /^[0-9A-F]+$/.test(pscript)) {
-    return 'pay-to-pubkey-hash';
-  }
-  throw new InvalidScriptFormat('Invalid or unsupported script format. Please use pay-to-pubkey-hash.');
-}
-
 module.exports = {
   formatFee,
   convertCurrencyTo,
   CurrencyConversionError,
   convertCurrencyToSatoshi,
-  UnsupportedScriptFormat,
-  getScriptFormat,
-  InvalidScriptFormat,
 };
