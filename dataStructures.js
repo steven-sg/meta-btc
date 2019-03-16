@@ -1,6 +1,6 @@
 class OrderedDict {
   /**
-   * A javascript object/dict with ordered keys and array values (by default)
+   * A javascript object/dict with ordered keys and array values
    * @param {strings[]} keys
    */
   constructor(keys = []) {

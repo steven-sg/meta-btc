@@ -1,4 +1,8 @@
 class CurrencyConversionError extends Error {
+  /**
+   *
+   * @param {string} message
+   */
   constructor(message) {
     super(message);
     this.name = 'CurrencyConversionError';
@@ -7,6 +11,10 @@ class CurrencyConversionError extends Error {
 }
 
 class UnsupportedScriptFormat extends Error {
+  /**
+   *
+   * @param {string} message
+   */
   constructor(message) {
     super(message);
     this.name = 'UnsupportedScriptFormat';
@@ -15,6 +23,10 @@ class UnsupportedScriptFormat extends Error {
 }
 
 class InvalidScriptFormat extends Error {
+  /**
+   *
+   * @param {string} message
+   */
   constructor(message) {
     super(message);
     this.name = 'InvalidScriptFormat';
@@ -22,10 +34,22 @@ class InvalidScriptFormat extends Error {
   }
 }
 
+/**
+ *
+ * @param {number} bytes
+ * @returns {number}
+ */
 function formatFee(bytes) {
   return (bytes * 1000) / bytes;
 }
 
+/**
+ *
+ * @param {number} value
+ * @param {'satoshi'|'mbtc'|'btc'} convertFrom
+ * @returns {number}
+ * @throws {CurrencyConversionError}
+ */
 function convertCurrencyToSatoshi(value, convertFrom) {
   switch (convertFrom.toLowerCase()) {
     case 'satoshi':
@@ -39,6 +63,14 @@ function convertCurrencyToSatoshi(value, convertFrom) {
   }
 }
 
+/**
+ *
+ * @param {number} value
+ * @param {'satoshi'|'mbtc'|'btc'} convertTo
+ * @param {'satoshi'|'mbtc'|'btc'} convertFrom
+ * @returns {number}
+ * @throws {CurrencyConversionError}
+ */
 function convertCurrencyTo(value, convertTo, convertFrom = 'satoshi') {
   const pvalue = convertCurrencyToSatoshi(value, convertFrom);
   switch (convertTo.toLowerCase()) {
@@ -53,6 +85,11 @@ function convertCurrencyTo(value, convertTo, convertFrom = 'satoshi') {
   }
 }
 
+/**
+ *
+ * @param {string} script
+ * @throws {InvalidScriptFormat}
+ */
 function getScriptFormat(script) {
   const pscript = script.toUpperCase();
   if (pscript.startsWith('76A914') && pscript.endsWith('88AC') && /^[0-9A-F]+$/.test(pscript)) {

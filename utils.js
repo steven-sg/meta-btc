@@ -10,6 +10,10 @@ const { OrderedDict } = require('./dataStructures');
 const { ActionLog, ConversionLog } = require('./model/transaction');
 
 class InvalidInputFormat extends Error {
+  /**
+   *
+   * @param {string} message
+   */
   constructor(message) {
     super(message);
     this.name = 'InvalidInputFormat';
@@ -18,6 +22,10 @@ class InvalidInputFormat extends Error {
 }
 
 class CurrencyConversionError extends Error {
+  /**
+   *
+   * @param {string} message
+   */
   constructor(message) {
     super(message);
     this.name = 'CurrencyConversionError';
@@ -26,6 +34,10 @@ class CurrencyConversionError extends Error {
 }
 
 class UnsupportedScriptFormat extends Error {
+  /**
+   *
+   * @param {string} message
+   */
   constructor(message) {
     super(message);
     this.name = 'UnsupportedScriptFormat';
@@ -34,6 +46,10 @@ class UnsupportedScriptFormat extends Error {
 }
 // TODO: remove in favor of the one in script util file
 class InvalidScriptFormat extends Error {
+  /**
+   *
+   * @param {string} message
+   */
   constructor(message) {
     super(message);
     this.name = 'InvalidScriptFormat';
@@ -42,28 +58,30 @@ class InvalidScriptFormat extends Error {
 }
 
 class ArrayObject {
+  /**
+   *
+   * @param {*[]} array
+   */
   constructor(array = []) {
     this.array = array;
   }
 
+  /**
+   *
+   * @param {string} delimiter
+   * @returns {string}
+   */
   join(delimiter = ',') {
     return this.array.join(delimiter);
   }
 }
 
-class Tuple {
-  constructor(...args) {
-    this.data = [];
-    for (let i = 0; i < args.length; i += 1) {
-      this.data.push(args[i]);
-    }
-  }
-
-  getValues() {
-    return this.data;
-  }
-}
-
+/**
+ *
+ * @param {string} label
+ * @param {string} value
+ * @returns {string}
+ */
 function getTemplateValue(label, value) {
   if (label) {
     return `${label}::${value}`;
@@ -71,14 +89,30 @@ function getTemplateValue(label, value) {
   return value;
 }
 
+/**
+ *
+ * @param {string} str
+ * @returns {boolean}
+ */
 function isHexString(str) {
   return /^[0-9A-F]*$/i.test(str.toUpperCase());
 }
 
+/**
+ *
+ * @param {string} string
+ * @returns {boolean}
+ */
 function isBase58(string) {
   return /^[1-9a-km-zA-HJ-NP-Z]+$/.test(string);
 }
 
+/**
+ *
+ * @param {string} str
+ * @param {boolean} regex
+ * @returns {boolean}
+ */
 function isDecimalString(str, regex = false) {
   // return !isNaN(str);
   if (regex) {
@@ -87,14 +121,21 @@ function isDecimalString(str, regex = false) {
   return !Number.isNaN(Number(str));
 }
 
-function isAlphaNumeric(str) {
-  return /^[0-9A-Z]*$/i.test(str.toUpperCase());
-}
-
+/**
+ *
+ * @param {*} structure
+ * @returns {boolean}
+ */
 function isIterable(structure) {
   return Array.isArray(structure);
 }
 
+/**
+ * Flatten Array
+ * @param {OrderedDict|Array|Object|*} array
+ * @param {ArrayObject} arrayObject
+ * @returns {ArrayObject}
+ */
 function joinArray(array, arrayObject = new ArrayObject()) {
   if (array instanceof OrderedDict) {
     array.getKeys().forEach((key) => {
@@ -104,8 +145,6 @@ function joinArray(array, arrayObject = new ArrayObject()) {
     array.forEach((item) => {
       joinArray(item, arrayObject);
     });
-  } else if (array instanceof Tuple) {
-    arrayObject.array.push(array.getValues());
   } else if (array && array.key && array.value) {
     joinArray(array.value, arrayObject);
   } else {
@@ -114,6 +153,13 @@ function joinArray(array, arrayObject = new ArrayObject()) {
   return arrayObject;
 }
 
+/**
+ *
+ * @param {string} hexString
+ * @param {*} logger
+ * @param {*} xTemplate
+ * @returns {string}
+ */
 function sha256(hexString, logger, xTemplate = {}) {
   const md = forge.md.sha256.create();
   md.update(forge.util.hexToBytes(hexString));
@@ -131,14 +177,32 @@ function sha256(hexString, logger, xTemplate = {}) {
   return hexDigest;
 }
 
+/**
+ *
+ * @param {string} hexString
+ * @returns {string}
+ */
 function ripemd160(hexString) {
   return new RIPEMD160().update(hexString, 'hex').digest('hex');
 }
 
+/**
+ *
+ * @param {string} hexString
+ * @returns {string}
+ */
 function hash160(hexString) {
   const hashStr = sha256(hexString);
   return ripemd160(hashStr);
 }
+
+/**
+ *
+ * @param {string} hexString
+ * @param {*} logger
+ * @param {*} xTemplate
+ * @returns {string}
+ */
 function convertToLittleEndian(hexString, logger, xTemplate = {}) {
   // logic
   const hexedLE = hexString.match(/.{2}/g).reverse().join('');
@@ -155,6 +219,14 @@ function convertToLittleEndian(hexString, logger, xTemplate = {}) {
   return hexedLE;
 }
 
+/**
+ *
+ * @param {number} integer
+ * @param {number} bytes
+ * @param {*} logger
+ * @param {*} xTemplate
+ * @returns {string}
+ */
 function convertIntegerToBytes(integer, bytes, logger, xTemplate = {}) {
   const buff = Buffer.alloc(bytes);
   buff.writeUIntBE(integer, 0, bytes);
@@ -172,6 +244,14 @@ function convertIntegerToBytes(integer, bytes, logger, xTemplate = {}) {
   return hexedInteger;
 }
 
+/**
+ *
+ * @param {number} integer
+ * @param {number} bytes
+ * @param {*} logger
+ * @param {*} xTemplate
+ * @returns {string}
+ */
 function convertIntegerToLittleEndian(integer, bytes, logger, xTemplate = {}) {
   // TODO the below functions dont even implement xtemplate
   const hexedInteger = convertIntegerToBytes(integer, bytes, logger, xTemplate);
@@ -199,33 +279,55 @@ function getByteLength(string, logger, xTemplate = {}) {
   return byteLength;
 }
 
+/**
+ *
+ * @param {string} string
+ * @param {*} logger
+ * @param {*} xTemplate
+ * @returns {string}
+ */
 function getByteLengthInBytes(string, logger, xTemplate = {}) {
   // TODO this function is DEFINTELY bugged, fails for byteLength 372
   const byteLength = getByteLength(string, logger, xTemplate);
   return convertIntegerToBytes(byteLength, 1, logger, xTemplate);
 }
 
+/**
+ *
+ * @param {number} value
+ * @param {'SATOSHI'|'MBTC'|'BTC'} convertFrom
+ * @returns {number}
+ * @throws {CurrencyConversionError}
+ */
 function convertCurrencyToSatoshi(value, convertFrom) {
-  switch (convertFrom.toLowerCase()) {
-    case 'satoshi':
+  switch (convertFrom.toUpperCase()) {
+    case 'SATOSHI':
       return value;
-    case 'mbtc':
+    case 'MBTC':
       return (value * 100000);
-    case 'btc':
+    case 'BTC':
       return (value * 100000000);
     default:
       throw new CurrencyConversionError(`Unsupported conversion origin format: ${convertFrom}.`);
   }
 }
 
-function convertCurrencyTo(value, convertTo, convertFrom = 'satoshi') {
+/**
+ *
+ * @param {number} value
+ * @param {'SATOSHI'|'MBTC'|'BTC'} convertTo
+ * @param {'SATOSHI'|'MBTC'|'BTC'} convertFrom
+ * @returns {number}
+ * @throws {CurrencyConversionError}
+ */
+function convertCurrencyTo(value, convertTo, convertFrom = 'SATOSHI') {
   const pvalue = convertCurrencyToSatoshi(value, convertFrom);
-  switch (convertTo.toLowerCase()) {
-    case 'satoshi':
+  switch (convertTo.toUpperCase()) {
+    case 'SATOSHI':
       return pvalue;
-    case 'mbtc':
+    case 'MBTC':
       return (pvalue / 100000).toFixed(5);
-    case 'btc':
+    case 'BTC':
       return (pvalue / 100000000).toFixed(8);
     default:
       throw new CurrencyConversionError(`Unsupported conversion destination format: ${convertTo}.`);
@@ -241,6 +343,13 @@ function getScriptFormat(script) {
   throw new InvalidScriptFormat('Invalid or unsupported script format. Please use pay-to-pubkey-hash.');
 }
 
+/**
+ *
+ * @param {string} string
+ * @param {*} logger
+ * @param {*} xTemplate
+ * @returns {string}
+ */
 function b58decode(string, logger, xTemplate = {}) {
   const decodedString = base58.decode(string).toString('hex');
   // logging
@@ -256,10 +365,21 @@ function b58decode(string, logger, xTemplate = {}) {
   return decodedString;
 }
 
+/**
+ *
+ * @param {string} string
+ * @returns {string}
+ */
 function b58encode(string) {
   return base58.encode(SafeBuffer.from(string, 'hex'), 'hex');
 }
 
+/**
+ *
+ * @param {string} address
+ * @param {*} logger
+ * @returns {string}
+ */
 function stripAddress(address, logger) {
   const strippedAddress = address.slice(2, -8);
   // logging
@@ -274,6 +394,13 @@ function stripAddress(address, logger) {
   return strippedAddress;
 }
 
+/**
+ *
+ * @param {string} privateKey
+ * @param {*} logger
+ * @param {*} xTemplate
+ * @returns {string}
+ */
 function decodePrivKey(privateKey, logger, xTemplate = {}) {
   // Account for other key types
   // if wif:
@@ -286,11 +413,23 @@ function decodePrivKey(privateKey, logger, xTemplate = {}) {
   return hexPriv;
 }
 
+/**
+ *
+ * @param {string} privateKey
+ * @param {*} logger
+ * @returns {string}
+ */
 function ecdsaFromPriv(privateKey, logger) {
   const hexPriv = decodePrivKey(privateKey, logger, { string: 'private_key' });
   return ecdsa.keyFromPrivate(hexPriv);
 }
 
+/**
+ *
+ * @param {string} publicKey
+ * @param {*} logger
+ * @returns {string}
+ */
 function encodePub(publicKey, logger) {
   // ASSUMES PUBLIC KEY IS IN HEX FOR NOW
   // ONLY ENCODE HEX TO HEX COMPRESSED
@@ -345,8 +484,13 @@ function encodePub(publicKey, logger) {
   return compressedHex;
 }
 
+/**
+ *
+ * @param {*} key
+ * @returns {'decimal'|'hex'|'hex_compressed'|'wif'|'wif_compressed'}
+ * @throws {InvalidInputFormat}
+ */
 function getPrivateKeyFormat(key) {
-  // TODO why is compressed longer than non compressed
   if (isDecimalString(key)) {
     return 'decimal';
   } if (key.length === 64 && isHexString(key)) {
@@ -361,6 +505,12 @@ function getPrivateKeyFormat(key) {
   throw new InvalidInputFormat();
 }
 
+/**
+ *
+ * @param {string} key
+ * @returns {'mainnet'|'testnet'}
+ * @throws {InvalidInputFormat}
+ */
 function getWifNetwork(key) {
   const ikey = key.toLowerCase();
   if (ikey.startsWith('5')
@@ -374,6 +524,12 @@ function getWifNetwork(key) {
   throw new InvalidInputFormat();
 }
 
+/**
+ *
+ * @param {string} address
+ * @returns {'p2pkh'|'p2sh'}
+ * @throws {InvalidInputFormat}
+ */
 function getAddressFormat(address) {
   if ((address.startsWith('1')
       || address.startsWith('m')
@@ -387,6 +543,12 @@ function getAddressFormat(address) {
   throw new InvalidInputFormat(`${address} does not adhere to any known format.`);
 }
 
+/**
+ *
+ * @param {string} address
+ * @returns {'mainnet'|'testnet'}
+ * @throws {InvalidInputFormat}
+ */
 function getAddressNetwork(address) {
   if (address.startsWith('1')
       || address.startsWith('3')) {
@@ -399,6 +561,12 @@ function getAddressNetwork(address) {
   throw new InvalidInputFormat(`${address} does not adhere to any known format.`);
 }
 
+/**
+ *
+ * @param {string} key
+ * @param {string} networkPrefix
+ * @returns {string}
+ */
 function networkPrependDoubleHashChecksumAppendBase58(key, networkPrefix) {
   let networkAwareKey = networkPrefix + key;
 
@@ -410,6 +578,14 @@ function networkPrependDoubleHashChecksumAppendBase58(key, networkPrefix) {
   return b58encode(networkAwareKey);
 }
 
+/**
+ *
+ * @param {'decimal'|'hex'} encoding
+ * @param {'p2pkh'|'p2sh'} type
+ * @param {'mainnet'|'testnet'} network
+ * @returns {string}
+ * @throws {InvalidInputFormat}
+ */
 function getAddressPrefix(encoding, type = 'p2pkh', network = 'mainnet') {
   const prefixes = {
     p2pkh: {
@@ -441,11 +617,22 @@ function getAddressPrefix(encoding, type = 'p2pkh', network = 'mainnet') {
   throw new InvalidInputFormat('Unrecognised argument(s).');
 }
 
+/**
+ *
+ * @param {string} priv
+ * @returns {string}
+ */
 function privToPub(priv) {
   const keypair = ecdsaFromPriv(priv);
   return encodePub(keypair.getPublic().encode('hex'));
 }
 
+/**
+ *
+ * @param {string} pub
+ * @param {'mainnet'|'testnet'} network
+ * @returns {string}
+ */
 function pubToAddress(pub, network = 'mainnet') {
   // assumes pub is hex
   const networkPrefix = getAddressPrefix('hex', 'p2pkh', network);
@@ -453,13 +640,18 @@ function pubToAddress(pub, network = 'mainnet') {
   return networkPrependDoubleHashChecksumAppendBase58(hashedPub, networkPrefix);
 }
 
+/**
+ *
+ * @param {string} priv
+ * @param {'mainnet'|'testnet'} network
+ * @returns {string}
+ */
 function privToAddress(priv, network = 'mainnet') {
   return pubToAddress(privToPub(priv), network);
 }
 
 module.exports = {
   InvalidInputFormat,
-  Tuple,
   isIterable,
   joinArray,
   convertToLittleEndian,
