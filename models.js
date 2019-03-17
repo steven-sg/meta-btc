@@ -106,7 +106,7 @@ class ActionLog {
 
 class AppendLog extends ActionLog {
   /**
-   * 
+   *
    * @param {string} appendage
    * @param {string} to
    * @param {string|string[]} result
@@ -249,7 +249,8 @@ class OrderedDict {
     const valueList = [];
     this.keys.forEach((key) => {
       const values = this.vals[key] && this.vals[key].map((value) => {
-        return value instanceof OrderedDict ? value.getArray() : value;
+        const val = value instanceof OrderedDict ? value.getArray() : value;
+        return val;
       });
 
       valueList.push({

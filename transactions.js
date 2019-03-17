@@ -285,7 +285,10 @@ class ModularTransaction {
       let encodedPub;
       if (utils.getPrivateKeyFormat(privateKeys[i]) === 'wif_compressed') {
         // encodes in pub key as compressed if priv is compressed
-        encodedPub = utils.encodePub(publicKey, inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY));
+        encodedPub = utils.encodePub(
+          publicKey,
+          inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
+        );
       } else if (utils.getPrivateKeyFormat(privateKeys[i]) === 'wif') {
         encodedPub = publicKey;
       } else {

@@ -3,10 +3,12 @@ const { Buffer } = require('buffer/');
 const { ec } = require('elliptic/');
 const forge = require('node-forge');
 const SafeBuffer = require('safe-buffer').Buffer;
-const ecdsa = new ec('secp256k1');
 const RIPEMD160 = require('ripemd160');
 const { log } = require('./logger');
 const { OrderedDict, ActionLog, ConversionLog } = require('./models');
+
+// eslint-disable-next-line new-cap
+const ecdsa = new ec('secp256k1');
 
 class InvalidInputError extends Error {
   /**
