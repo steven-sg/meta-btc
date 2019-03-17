@@ -2,7 +2,7 @@ const { Buffer } = require('buffer/');
 const BN = require('bn.js');
 const utils = require('./utils');
 const { log } = require('./logger');
-const { OrderedDict } = require('./dataStructures');
+const { OrderedDict } = require('./models');
 const services = require('./services/services');
 const scripts = require('./scripts');
 const {
@@ -10,7 +10,7 @@ const {
   AppendLog,
   AppendTransactionLog,
   ReplaceLog,
-} = require('./model/transaction');
+} = require('./models');
 
 const N = new BN('115792089237316195423570985008687907852837564279074904382605163141518161494337');
 

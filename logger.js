@@ -1,4 +1,4 @@
-const { OrderedDict } = require('./dataStructures');
+const { OrderedDict } = require('./models');
 
 /**
  *

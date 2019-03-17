@@ -1,6 +1,6 @@
 const utils = require('./utils');
 const { log } = require('./logger');
-const { ActionLog } = require('./model/transaction');
+const { ActionLog } = require('./models');
 
 class InvalidScriptFormat extends Error {
   constructor(message) {
@@ -84,9 +84,8 @@ function createScript(address, logger) {
   }
 }
 
-// TODO: change to upper case
 module.exports = {
-  p2pkh: P2PKH,
+  P2PKH,
   P2SH,
   createScript,
   getScriptFormat,

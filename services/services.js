@@ -1,5 +1,5 @@
 const blockcypher = require('./blockcypher');
-const transaction = require('../model/transaction');
+const transaction = require('../models');
 const { ServiceResponse, ServiceError, InternalError } = require('./utils');
 
 /**

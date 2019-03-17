@@ -6,8 +6,7 @@ const SafeBuffer = require('safe-buffer').Buffer;
 const ecdsa = new ec('secp256k1');
 const RIPEMD160 = require('ripemd160');
 const { log } = require('./logger');
-const { OrderedDict } = require('./dataStructures');
-const { ActionLog, ConversionLog } = require('./model/transaction');
+const { OrderedDict, ActionLog, ConversionLog } = require('./models');
 
 class InvalidInputError extends Error {
   /**

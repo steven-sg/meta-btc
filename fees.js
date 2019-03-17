@@ -1,5 +1,5 @@
 const utils = require('./utils');
-const { Payment } = require('./model/transaction');
+const { Payment } = require('./models');
 
 /**
  *
