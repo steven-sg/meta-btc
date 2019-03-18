@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { InvalidInputError } = require('../utils');
+const { InvalidInputError } = require('../models');
 
 /**
  *

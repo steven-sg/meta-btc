@@ -5,34 +5,10 @@ const forge = require('node-forge');
 const SafeBuffer = require('safe-buffer').Buffer;
 const RIPEMD160 = require('ripemd160');
 const { log } = require('./logger');
-const { OrderedDict, ActionLog, ConversionLog } = require('./models');
+const { OrderedDict, ActionLog, ConversionLog, InvalidInputError } = require('./models');
 
 // eslint-disable-next-line new-cap
 const ecdsa = new ec('secp256k1');
-
-class InvalidInputError extends Error {
-  /**
-   *
-   * @param {string} message
-   */
-  constructor(message) {
-    super(message);
-    this.name = 'InvalidInputError';
-    this.message = message;
-  }
-}
-
-class CurrencyConversionError extends Error {
-  /**
-   *
-   * @param {string} message
-   */
-  constructor(message) {
-    super(message);
-    this.name = 'CurrencyConversionError';
-    this.message = message;
-  }
-}
 
 class ArrayObject {
   /**
@@ -267,48 +243,6 @@ function getByteLengthInBytes(string, logger, xTemplate = {}) {
   // TODO this function is DEFINTELY bugged, fails for byteLength 372
   const byteLength = getByteLength(string, logger, xTemplate);
   return convertIntegerToBytes(byteLength, 1, logger, xTemplate);
-}
-
-/**
- *
- * @param {number} value
- * @param {'SATOSHI'|'MBTC'|'BTC'} convertFrom
- * @returns {number}
- * @throws {CurrencyConversionError}
- */
-function convertCurrencyToSatoshi(value, convertFrom) {
-  switch (convertFrom.toUpperCase()) {
-    case 'SATOSHI':
-      return value;
-    case 'MBTC':
-      return (value * 100000);
-    case 'BTC':
-      return (value * 100000000);
-    default:
-      throw new CurrencyConversionError(`Unsupported conversion origin format: ${convertFrom}.`);
-  }
-}
-
-/**
- *
- * @param {number} value
- * @param {'SATOSHI'|'MBTC'|'BTC'} convertTo
- * @param {'SATOSHI'|'MBTC'|'BTC'} convertFrom
- * @returns {number}
- * @throws {CurrencyConversionError}
- */
-function convertCurrencyTo(value, convertTo, convertFrom = 'SATOSHI') {
-  const pvalue = convertCurrencyToSatoshi(value, convertFrom);
-  switch (convertTo.toUpperCase()) {
-    case 'SATOSHI':
-      return pvalue;
-    case 'MBTC':
-      return (pvalue / 100000).toFixed(5);
-    case 'BTC':
-      return (pvalue / 100000000).toFixed(8);
-    default:
-      throw new CurrencyConversionError(`Unsupported conversion destination format: ${convertTo}.`);
-  }
 }
 
 /**
@@ -619,7 +553,6 @@ function privToAddress(priv, network = 'mainnet') {
 }
 
 module.exports = {
-  InvalidInputError,
   isIterable,
   joinArray,
   convertToLittleEndian,
@@ -644,9 +577,6 @@ module.exports = {
   networkPrependDoubleHashChecksumAppendBase58,
   pubToAddress,
   privToAddress,
-  convertCurrencyTo,
-  CurrencyConversionError,
-  convertCurrencyToSatoshi,
   isDecimalString,
   getTemplateValue,
   isBase58,
