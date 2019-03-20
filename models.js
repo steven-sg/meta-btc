@@ -206,6 +206,7 @@ class OrderedDict {
   pushTo(key, item) {
     if (!this.keys.includes(key)) {
       this.keys.push(key);
+      this.vals[key] = [];
     }
     this.vals[key].push(item);
   }
@@ -282,8 +283,13 @@ class OrderedDict {
    * @param {string} oldKey
    * @param {string} newKey
    * @param {*[]} newValue
+   * @returns {boolean}
    */
   replace(oldKey, newKey, newValue) {
+    if (!this.keys.includes(oldKey)) {
+      return false;
+    }
+
     for (let i = 0; i < this.getLength; i += 1) {
       if (this.key[i] === oldKey) {
         this.key[i] = newKey;
@@ -292,6 +298,7 @@ class OrderedDict {
     }
     delete this.vals[oldKey];
     this.vals[newKey] = newValue;
+    return true;
   }
 
   /**
@@ -299,9 +306,9 @@ class OrderedDict {
    * @param {string} key
    */
   remove(key) {
-    for (let i = 0; i < this.getLength; i += 1) {
-      if (this.key[i] === key) {
-        this.key.splice(i, 1);
+    for (let i = 0; i < this.getLength(); i += 1) {
+      if (this.keys[i] === key) {
+        this.keys.splice(i, 1);
         break;
       }
     }

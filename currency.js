@@ -12,27 +12,18 @@ class CurrencyConversionError extends Error {
 
 /**
  *
- * @param {number} bytes
- * @returns {number}
- */
-function formatFee(bytes) {
-  return (bytes * 1000) / bytes;
-}
-
-/**
- *
- * @param {number} value
+ * @param {number|string} value
  * @param {'satoshi'|'mbtc'|'btc'} convertFrom
- * @returns {number}
+ * @returns {number|string}
  * @throws {CurrencyConversionError}
  */
 function convertCurrencyToSatoshi(value, convertFrom) {
-  switch (convertFrom.toLowerCase()) {
-    case 'satoshi':
+  switch (convertFrom.toUpperCase()) {
+    case 'SATOSHI':
       return value;
-    case 'mbtc':
+    case 'MBTC':
       return (value * 100000);
-    case 'btc':
+    case 'BTC':
       return (value * 100000000);
     default:
       throw new CurrencyConversionError(`Unsupported conversion origin format: ${convertFrom}.`);
@@ -41,20 +32,20 @@ function convertCurrencyToSatoshi(value, convertFrom) {
 
 /**
  *
- * @param {number} value
+ * @param {number|string} value
  * @param {'satoshi'|'mbtc'|'btc'} convertTo
  * @param {'satoshi'|'mbtc'|'btc'} convertFrom
- * @returns {number}
+ * @returns {number|string}
  * @throws {CurrencyConversionError}
  */
 function convertCurrencyTo(value, convertTo, convertFrom = 'satoshi') {
   const pvalue = convertCurrencyToSatoshi(value, convertFrom);
-  switch (convertTo.toLowerCase()) {
-    case 'satoshi':
+  switch (convertTo.toUpperCase()) {
+    case 'SATOSHI':
       return pvalue;
-    case 'mbtc':
+    case 'MBTC':
       return (pvalue / 100000).toFixed(5);
-    case 'btc':
+    case 'BTC':
       return (pvalue / 100000000).toFixed(8);
     default:
       throw new CurrencyConversionError(`Unsupported conversion destination format: ${convertTo}.`);
@@ -62,7 +53,6 @@ function convertCurrencyTo(value, convertTo, convertFrom = 'satoshi') {
 }
 
 module.exports = {
-  formatFee,
   convertCurrencyTo,
   CurrencyConversionError,
   convertCurrencyToSatoshi,

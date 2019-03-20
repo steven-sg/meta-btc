@@ -85,6 +85,7 @@ function createScript(address, logger) {
 }
 
 module.exports = {
+  InvalidScriptFormat,
   P2PKH,
   P2SH,
   createScript,

@@ -11,7 +11,7 @@ function bytesTokB(bytes) {
 
 /**
  *
- * @param {number} size
+ * @param {number} size expected be in bytes
  * @param {('BYTES'|'BYTE'|'KB')} format
  */
 function formatSize(size, format) {

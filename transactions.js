@@ -81,6 +81,11 @@ function appendToTransaction(arg, array, transaction, logger = null, xtemplate =
 }
 
 class ModularTransaction {
+  /**
+   *
+   * @param {Contribution[]} contributions
+   * @param {Payment[]} payments
+   */
   constructor(contributions, payments) {
     this.contributions = contributions;
     this.payments = payments;
@@ -572,6 +577,12 @@ class ModularTransaction {
   }
 }
 
+/**
+ *
+ * @param {Contribution[]} contributions
+ * @param {Payment[]} payments
+ * @param {string[]} privs
+ */
 const createSignedTransaction = (contributions, payments, privs) => {
   const modTx = new ModularTransaction(contributions, payments);
   modTx.createRawTransaction();
