@@ -47,34 +47,33 @@ function simpleAppend(value, array) {
 }
 
 function appendTo(arg, array, parentArray, logger = null, xtemplate = {}) {
-  const prevValues = parentArray ? `${utils.joinArray(parentArray).join('')}${utils.joinArray(array).join('')}` : utils.joinArray(array).join('');
+  const prevValues = parentArray ? `${utils.joinArray(parentArray).join('')}` : utils.joinArray(array).join('');
   simpleAppend(arg, array);
   if (logger) {
     const appendage = utils.joinArray(arg).join('');
     const appendageTemplate = utils.getTemplateValue(xtemplate.appendTo.arg, appendage);
     const toTemplate = utils.getTemplateValue(xtemplate.appendTo.destination, prevValues || 'EMPTY');
+
     log(logger, new AppendLog(
       `${appendageTemplate}`,
       `${toTemplate}`,
-      `${prevValues || ''}${utils.joinArray(array).join('')}`,
+      `${utils.joinArray(parentArray).join('') || utils.joinArray(array).join('')}`,
     ));
   }
 }
 
 function appendToTransaction(arg, array, transaction, logger = null, xtemplate = {}) {
   const prevTransaction = utils.joinArray(transaction).join('');
-  const prevArrayState = utils.joinArray(array).join('');
-
   array.push(arg);
   if (logger) {
-    const toTemplate = `${prevTransaction}${prevArrayState}` || 'EMPTY';
+    const toTemplate = `${prevTransaction}` || 'EMPTY';
 
     const appendage = arg instanceof OrderedDict ? utils.joinArray(arg).join('') : arg;
     const appendageTemplate = utils.getTemplateValue(xtemplate.appendTo.arg, appendage);
     log(logger, new AppendTransactionLog(
       `${appendageTemplate}`,
       `${toTemplate}`,
-      `${prevTransaction}${utils.joinArray(array).join('')}`,
+      `${utils.joinArray(transaction).join('')}`,
       OrderedDict.copy(transaction),
     ));
   }
@@ -208,7 +207,7 @@ class ModularTransaction {
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
         new ActionLog(
           'Sign',
-          `${doubleHashedTx} with private_key`,
+          `double_hashed_raw_transaction::${doubleHashedTx} with private_key`,
           [
             `r value: ${signedTx.r.toString()}`,
             `s value: ${signedTx.s.toString()}`,
@@ -314,7 +313,7 @@ class ModularTransaction {
         input.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
         null,
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        { appendTo: { destination: 'signed_script_pub_key' } },
+        { appendTo: { arg: 'public_key_length', destination: 'signed_script_pub_key' } },
       );
       appendTo(
         {
@@ -324,7 +323,7 @@ class ModularTransaction {
         input.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
         null,
         inputLogger.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY),
-        { appendTo: { destination: 'signed_script_pub_key' } },
+        { appendTo: { arg: 'public_key', destination: 'signed_script_pub_key' } },
       );
 
       const scriptAsString = utils.joinArray(input.getValue(txConstants.INPUTS.SCRIPT_PUB_KEY)).join('');

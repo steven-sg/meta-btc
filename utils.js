@@ -327,17 +327,12 @@ function ecdsaFromPriv(privateKey, logger) {
 }
 
 /**
- *
+ * Encodes (compressed) public key as compressed hex
  * @param {string} publicKey
  * @param {*} logger
  * @returns {string}
  */
 function encodePub(publicKey, logger) {
-  // ASSUMES PUBLIC KEY IS IN HEX FOR NOW
-  // ONLY ENCODE HEX TO HEX COMPRESSED
-
-  // GET RID OF FIRST BYTE PREFIX
-  // TODO ADD LOGGER LOGIC
   const strippedPub = publicKey.slice(2);
 
   const hexSegmentA = strippedPub.slice(0, 64);
@@ -380,7 +375,6 @@ function encodePub(publicKey, logger) {
         ),
       ],
     ));
-    // TODO multi subaction action
   }
 
   return compressedHex;
